@@ -16,15 +16,29 @@ export function Panel({
   description,
   children,
   className,
+  id,
+  highlighted = false,
+  highlightLabel = "Your demo record",
 }: {
   title: string;
   description?: string;
   children: ReactNode;
   className?: string;
+  id?: string;
+  highlighted?: boolean;
+  highlightLabel?: string;
 }) {
   return (
-    <Card className={className}>
+    <Card
+      id={id}
+      data-tour-record={highlighted ? "true" : undefined}
+      className={cn(
+        className,
+        highlighted && "border-primary bg-primary/5 ring-primary/30 scroll-mt-16 scroll-mb-48 ring-2",
+      )}
+    >
       <CardHeader>
+        {highlighted && <Badge className="self-start">{highlightLabel}</Badge>}
         <CardTitle>{title}</CardTitle>
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>

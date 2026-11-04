@@ -21,6 +21,19 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
   await p.screenshot({ path: path.resolve(__dirname, "../../artifacts/winglo-mobile-handoff.png") });
   await p.getByRole("button", { name: "Create Enquiry & Continue", exact: true }).click();
   await p.getByRole("heading", { name: "Enquiries", exact: true }).waitFor();
+  const enquiryId = (await saved()).journey.enquiryId;
+  const enquiryCard = p.locator(`[id="mobile-${enquiryId}"]`);
+  await enquiryCard.getByText("Your demo enquiry", { exact: true }).waitFor();
+  assert.equal(await enquiryCard.getAttribute("data-tour-record"), "true");
+  assert.ok(await enquiryCard.evaluate((e) => getComputedStyle(e).boxShadow !== "none"));
+  await p.waitForTimeout(700);
+  assert.ok(
+    await enquiryCard.evaluate((e) => {
+      const r = e.getBoundingClientRect();
+      return r.top < innerHeight && r.bottom > 0;
+    }),
+  );
+  await p.screenshot({ path: path.resolve(__dirname, "../../artifacts/winglo-mobile-highlight.png") });
   const guide = p.getByRole("complementary", { name: "Guided demo progress" });
   await guide.getByRole("button", { name: "Next Step", exact: true }).click();
   const dialog = p.getByRole("dialog");

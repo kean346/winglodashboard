@@ -91,9 +91,12 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
   )[section];
   useEffect(() => {
     if (!ready || !journey?.active || !highlightedId) return;
-    const frame = requestAnimationFrame(() =>
-      document.getElementById(highlightedId)?.scrollIntoView({ block: "nearest" }),
-    );
+    const frame = requestAnimationFrame(() => {
+      const mobile = window.matchMedia("(max-width: 639px)").matches;
+      document
+        .getElementById(mobile ? `mobile-${highlightedId}` : highlightedId)
+        ?.scrollIntoView({ block: mobile ? "center" : "nearest" });
+    });
     return () => cancelAnimationFrame(frame);
   }, [ready, journey?.active, highlightedId]);
   if (!ready || !d)
@@ -355,6 +358,9 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                 .map((e) => (
                   <Panel
                     key={e.id}
+                    id={`mobile-${e.id}`}
+                    highlighted={journey?.active && highlightedId === e.id}
+                    highlightLabel="Your demo enquiry"
                     title={customer(e.customerId)?.name ?? "Customer"}
                     description={service(e.serviceId)}
                   >
@@ -382,6 +388,9 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                 .map((q) => (
                   <Panel
                     key={q.id}
+                    id={`mobile-${q.id}`}
+                    highlighted={journey?.active && highlightedId === q.id}
+                    highlightLabel="Your demo quotation"
                     title={customer(q.customerId)?.name ?? "Customer"}
                     description={service(q.serviceId)}
                   >
@@ -420,7 +429,14 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
               {d.customers
                 .filter((c) => matches(`${c.name} ${c.phone} ${c.email} ${c.location}`))
                 .map((c) => (
-                  <Panel key={c.id} title={c.name} description={c.location}>
+                  <Panel
+                    key={c.id}
+                    id={`mobile-${c.id}`}
+                    highlighted={journey?.active && highlightedId === c.id}
+                    highlightLabel="Your demo customer"
+                    title={c.name}
+                    description={c.location}
+                  >
                     <div className="flex flex-col gap-3">
                       <p className="text-sm">{c.phone}</p>
                       <p className="text-muted-foreground text-xs break-all">{c.email}</p>
@@ -455,6 +471,9 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                 .map((b) => (
                   <Panel
                     key={b.id}
+                    id={`mobile-${b.id}`}
+                    highlighted={journey?.active && highlightedId === b.id}
+                    highlightLabel="Your demo booking"
                     title={customer(b.customerId)?.name ?? "Customer"}
                     description={service(b.serviceId)}
                   >
