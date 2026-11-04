@@ -86,6 +86,8 @@ The original MIT notice remains in [LICENSE](LICENSE), with a distribution copy 
 
 ## Optional product tour
 
-**Take a Guided Tour** opens an independent tour of the real dashboard. **Try the Interactive Demo** opens the existing live workflow. The tour stores only its own position/visibility in `winglo-product-tour`; Back, Skip and Restart never reset business records or guided-demo progress. An optional live-demo step explains the handoff and lets you return to the product tour afterward. Missing targets show a fallback action; phone layouts wrap the compact controls, and tour scrolling respects reduced-motion preferences. The tour is never started automatically for a fresh visitor.
+**Take Live Tour** opens an independent tour of the real dashboard. **Try the Interactive Demo** opens the existing live workflow. The tour stores only its own position/visibility in `winglo-product-tour`; Back, Skip and Restart never reset business records or guided-demo progress. An optional live-demo step explains the handoff and lets you return to the product tour afterward. Missing targets show a fallback action; phone layouts wrap the compact controls, and tour scrolling respects reduced-motion preferences. The tour is never started automatically for a fresh visitor.
 
 Run `tests/browser/winglo-product-tour.cjs` with the same Playwright environment variables as the other browser suites.
+
+Fresh visitors see a prominent **Start with a live tour** welcome card. The left sidebar also provides **Take Live Tour**. After the tour is opened or the visitor chooses to explore, the large welcome prompt is dismissed locally. The tour stays above calendar content, whose stacking context is isolated so scheduling elements cannot hide Step 6 controls.

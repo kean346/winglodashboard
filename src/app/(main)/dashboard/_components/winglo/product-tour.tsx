@@ -65,7 +65,7 @@ const steps = [
     text: "Keep exploring, restart this tour or resume your interactive demo. Your business records are preserved.",
   },
 ];
-type Tour = { step: number; open: boolean; participating: boolean };
+type Tour = { step: number; open: boolean; participating: boolean; seen?: boolean };
 const initial: Tour = { step: 0, open: false, participating: false };
 export function ProductTour() {
   const [tour, setTour] = useState<Tour>(initial);
@@ -128,9 +128,18 @@ export function ProductTour() {
   }, [tour.open, tour.participating, pathname, step]);
   function go(index: number) {
     if (useDemo.getState().journey?.active) useDemo.getState().patchJourney({ minimized: true });
-    setTour({ step: index, open: true, participating: false });
+    setTour({ step: index, open: true, participating: false, seen: true });
     router.push(`/dashboard/${steps[index].route}`);
   }
+  useEffect(() => {
+    const open = () => {
+      if (useDemo.getState().journey?.active) useDemo.getState().patchJourney({ minimized: true });
+      setTour((current) => ({ ...current, open: true, seen: true, participating: false }));
+      router.push(`/dashboard/${steps[tour.step].route}`);
+    };
+    window.addEventListener("winglo:open-product-tour", open);
+    return () => window.removeEventListener("winglo:open-product-tour", open);
+  }, [router, tour.step]);
   function live() {
     useDemo.getState().startJourney();
     if (tour.open) setTour({ ...tour, step: 3, participating: true });
@@ -138,16 +147,37 @@ export function ProductTour() {
   }
   return (
     <>
-      <div className="mx-4 flex flex-wrap gap-2 py-2">
-        <Button size="sm" variant="outline" onClick={() => go(tour.step)}>
-          Take a Guided Tour
-        </Button>
-        <Button size="sm" variant="ghost" data-product-demo onClick={live}>
-          Try the Interactive Demo
-        </Button>
-      </div>
+      {loaded && !tour.seen && !tour.open && pathname === "/dashboard/default" ? (
+        <section className="mx-4 my-4" aria-label="Welcome to Winglo">
+          <Card>
+            <CardContent className="flex flex-col items-start gap-4 py-8">
+              <p className="text-primary text-xs font-medium tracking-widest uppercase">Welcome to Winglo</p>
+              <h1 className="text-3xl tracking-tight">Start with a live tour.</h1>
+              <p className="text-muted-foreground max-w-lg text-sm">
+                We’ll show you how enquiries, quotations, cleaning bookings and customer records fit together. Follow
+                the highlights at your own pace.
+              </p>
+              <Button className="min-h-12 px-6" onClick={() => go(0)}>
+                Take Live Tour
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setTour({ ...tour, seen: true })}>
+                Explore dashboard instead
+              </Button>
+            </CardContent>
+          </Card>
+        </section>
+      ) : (
+        <div className="mx-4 flex flex-wrap gap-2 py-2">
+          <Button size="sm" onClick={() => go(tour.step)}>
+            Take Live Tour
+          </Button>
+          <Button size="sm" variant="ghost" data-product-demo onClick={live}>
+            Try the Interactive Demo
+          </Button>
+        </div>
+      )}
       {tour.open && (
-        <section data-product-tour aria-label="Product tour" className="sticky top-12 mx-4 mb-4">
+        <section data-product-tour aria-label="Product tour" className="sticky top-12 z-40 mx-4 mb-4">
           <Card>
             <CardContent
               className="flex flex-col gap-3 pt-4"

@@ -74,7 +74,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         </header>
         <ProductTour />
         {/* Pages can set data-content-padding="false" to render full-bleed app layouts. */}
-        <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden p-4 has-data-[content-padding=false]:p-0 md:p-6 md:has-data-[content-padding=false]:p-0">
+        <div className="relative isolate z-0 min-h-0 min-w-0 flex-1 overflow-x-hidden p-4 has-data-[content-padding=false]:p-0 md:p-6 md:has-data-[content-padding=false]:p-0">
           <AnimatedPage>{children}</AnimatedPage>
         </div>
         <JourneyPanel />
