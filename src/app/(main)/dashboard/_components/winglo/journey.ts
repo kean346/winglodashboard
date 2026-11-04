@@ -167,9 +167,23 @@ export function recordActivity(before: DemoData, after: DemoData): Activity[] {
   for (const b of after.bookings) {
     const previous = before.bookings.find((v) => v.id === b.id);
     if (!previous) events.push({ label: "Booking created", customerId: b.customerId, recordId: b.id });
-    if (previous?.status !== b.status && ["Confirmed", "Completed"].includes(b.status))
+    if (previous?.status !== b.status && (previous || b.status !== "Pending"))
       events.push({
-        label: b.status === "Completed" ? "Cleaning job completed" : "Booking confirmed",
+        label: (
+          {
+            Completed: "Cleaning job completed",
+            Confirmed: "Booking confirmed",
+            "In Progress": "Cleaning started",
+            Pending: "Booking returned to Pending",
+            Cancelled: "Booking cancelled",
+          } as Record<string, string>
+        )[b.status],
+        customerId: b.customerId,
+        recordId: b.id,
+      });
+    if (b.staffId && previous?.staffId !== b.staffId)
+      events.push({
+        label: `Cleaner assigned: ${after.settings.staff.find((s) => s.id === b.staffId)?.name ?? "Cleaning team"}`,
         customerId: b.customerId,
         recordId: b.id,
       });

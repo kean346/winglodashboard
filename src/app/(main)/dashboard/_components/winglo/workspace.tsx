@@ -31,6 +31,7 @@ import { BookingEditor, printQuote, QuoteEditor } from "./record-editors";
 import { AutomationPreview, SettingsPage } from "./settings";
 import { Choice, EmptyRecords, Modal, Panel, Status, TextField } from "./shared";
 import { hydrateDemo, useDemo, useDemoData } from "./store";
+import { NextActionButton } from "./workflow";
 
 type Section = "Overview" | "Enquiries" | "Quotations" | "Bookings" | "Customers" | "Settings";
 type Editor =
@@ -467,9 +468,12 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                           <Status>{b.status}</Status>
                         </TableCell>
                         <TableCell>
-                          <Button size="sm" variant="outline" onClick={() => editBooking(b)}>
-                            View / reschedule
-                          </Button>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <NextActionButton booking={b} />
+                            <Button size="sm" variant="outline" onClick={() => editBooking(b)}>
+                              View / reschedule
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

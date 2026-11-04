@@ -2,6 +2,8 @@
 import type { ReactNode } from "react";
 import { useId } from "react";
 
+import { cn } from "cn";
+
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -69,7 +71,23 @@ export function Choice({
   );
 }
 export function Status({ children }: { children: ReactNode }) {
-  return <Badge variant="secondary">{children}</Badge>;
+  const completed = children === "Completed" || children === "Accepted (Simulated)";
+  const active = children === "In Progress" || children === "Confirmed";
+  const cancelled = children === "Cancelled" || children === "Rejected" || children === "Expired";
+  return (
+    <Badge
+      variant="secondary"
+      className={cn(
+        "gap-1.5",
+        completed && "bg-primary/10 text-primary",
+        active && "border-primary/30 text-primary",
+        cancelled && "bg-destructive/10 text-destructive",
+      )}
+    >
+      <span aria-hidden className="size-1.5 rounded-full bg-current" />
+      {children}
+    </Badge>
+  );
 }
 export function Modal({
   title,

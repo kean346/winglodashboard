@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { type Booking, type Enquiry, localDate, money, type Quote, total } from "./model";
+import { OperationsOverview } from "./operations-overview";
 import { Panel, Status } from "./shared";
 import { useDemoData } from "./store";
 export function Overview({
@@ -100,6 +101,7 @@ export function Overview({
           </Card>
         ))}
       </div>
+      <OperationsOverview onBooking={onBooking} />
       <div className="grid gap-5 lg:grid-cols-3">
         <Panel
           title="A cleaner outlook."

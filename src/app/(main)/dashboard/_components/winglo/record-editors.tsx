@@ -21,6 +21,7 @@ import {
 } from "./model";
 import { Choice, TextField } from "./shared";
 import { useDemo, useDemoData } from "./store";
+import { BookingSummary, NextActionButton } from "./workflow";
 
 export function QuoteEditor({
   initial,
@@ -235,6 +236,18 @@ export function BookingEditor({
         }
       }}
     >
+      {initial && (
+        <>
+          <BookingSummary booking={data.bookings.find((b) => b.id === initial.id) ?? initial} />
+          <div className="flex flex-wrap items-center gap-3">
+            <NextActionButton
+              booking={data.bookings.find((b) => b.id === initial.id) ?? initial}
+              onDone={() => onDone(initial.id)}
+            />
+            <span className="text-muted-foreground text-xs">Quick actions apply to the saved appointment.</span>
+          </div>
+        </>
+      )}
       <FieldGroup>
         <Choice
           label="Customer"

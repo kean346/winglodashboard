@@ -2,6 +2,16 @@
 
 A browser-local cleaning business demo customised from the existing Studio Admin / NOREVA dashboard. The original layout, UI primitives, calendar styling, typography, theme switcher and motion system are retained. No backend or messaging provider is connected.
 
+## Visual workflow upgrade and rollback point
+
+The original pre-upgrade version is preserved at commit `538bcab191ddf22e9faa16365c4b872f441abcc0` on GitHub branch [`backup/pre-visual-upgrade-2026-11-04`](https://github.com/kean346/winglodashboard/tree/backup/pre-visual-upgrade-2026-11-04). This is a code rollback point; browser-local records are stored separately. Returning to this version does not require deleting records or changing database services.
+
+Booking screens now show the actual Pending → Confirmed → In Progress → Completed sequence. **Confirm Booking**, **Start Cleaning**, and **Complete Job** use the existing booking mutation, including its cleaner conflict and accepted-quotation checks. Cancelled/completed records have no forward quick action. Administrative status controls remain available in the existing editor.
+
+Routine confirmation/start actions offer a short Undo window. Undo refuses to overwrite later booking changes and reruns conflict validation. Completion requires a confirmation showing the saved job value because it affects demo revenue. Status corrections and staff assignments produce activity only when the actual record changes; seeded bookings do not acquire fabricated historical timestamps.
+
+Overview retains its original KPI and chart sections while adding a compact next-actions panel and a live booking-status breakdown. Booking details combine saved customer, service, date/time, cleaner, amount, a responsive workflow stepper and recorded activity. Existing calendar views are retained with a status legend, pending-state styling and cleaner/duration tooltips. Shared primitives, fonts, themes and navigation remain unchanged.
+
 ## Develop
 
 Use Node 24 (validated with 24.19.0) and npm:
@@ -59,6 +69,8 @@ Run Next.js once before a standalone type check on a fresh checkout so its image
 BASE_URL=http://127.0.0.1:3000 PLAYWRIGHT_MODULE=/path/to/playwright node tests/browser/winglo-workflow.cjs
 BASE_URL=http://127.0.0.1:3000 PLAYWRIGHT_MODULE=/path/to/playwright node tests/browser/winglo-actions.cjs
 ```
+
+The visual workflow suite (`tests/browser/winglo-visual-workflow.cjs`, run with the same Playwright variables) covers single-action confirmation, double-click protection, Undo/stale-Undo safety, starting work, completion confirmation/cancellation, persisted status/revenue/history, conflicts, filtering, mobile stepper width and theme screenshots. Visual review images use the `artifacts/winglo-visual-*` prefix.
 
 The workflow test covers both entry points, existing-data migration, all eight guided stages, route/refresh persistence, required-action gates, answer editing, all five service question sets, record linkage, duplicate guards, reminder previews, completed-job KPIs/history, pause/minimise/resume, isolated restart, reset, theme switching and mobile tabs/navigation/width. The actions test covers editable pricing/VAT/staff, quotation prefilling, printable output, week calendar view, cleaner conflicts and enquiry status filters. Updated demo images are `artifacts/winglo-interactive-desktop.png`, `artifacts/winglo-interactive-dark.png` and `artifacts/winglo-interactive-mobile.png`. Earlier overview images are retained.
 

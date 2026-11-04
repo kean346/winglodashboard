@@ -10,8 +10,8 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { EventCalendarViews } from "@/components/calendar/event-calendar-views";
 import { Button } from "@/components/ui/button";
 
-import type { Booking } from "./model";
-import { Choice } from "./shared";
+import { type Booking, bookingStatuses } from "./model";
+import { Choice, Status } from "./shared";
 import { useDemo, useDemoData } from "./store";
 export function BookingCalendar({ onEdit }: { onEdit: (b: Booking) => void }) {
   const d = useDemoData();
@@ -51,6 +51,14 @@ export function BookingCalendar({ onEdit }: { onEdit: (b: Booking) => void }) {
           />
         </div>
       </div>
+      <fieldset className="flex flex-wrap gap-2 border-t px-4 py-3">
+        <legend className="sr-only">Calendar status legend</legend>
+        {bookingStatuses
+          .filter((s) => s !== "Cancelled")
+          .map((s) => (
+            <Status key={s}>{s}</Status>
+          ))}
+      </fieldset>
       <EventCalendarViews
         controller={controller}
         initialView={view}
@@ -63,9 +71,16 @@ export function BookingCalendar({ onEdit }: { onEdit: (b: Booking) => void }) {
           .map((b) => ({
             id: b.id,
             title: `${d.customers.find((c) => c.id === b.customerId)?.name} · ${b.status}`,
+            backgroundColor: b.status === "Pending" ? "var(--muted-foreground)" : "var(--primary)",
+            borderColor: "transparent",
             start: b.start,
             end: new Date(new Date(b.start).getTime() + b.duration * 3600000).toISOString(),
           }))}
+        eventDidMount={(info) => {
+          const b = d.bookings.find((b) => b.id === info.event.id);
+          if (b)
+            info.el.title = `${info.event.title} · ${d.settings.staff.find((s) => s.id === b.staffId)?.name ?? "Unassigned"} · ${b.duration} hours`;
+        }}
         eventClick={(info) => {
           const b = d.bookings.find((b) => b.id === info.event.id);
           if (b) onEdit(b);
