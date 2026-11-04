@@ -83,3 +83,9 @@ The inherited regional/motion browser scripts target the previous NOREVA screens
 ## Licences
 
 The original MIT notice remains in [LICENSE](LICENSE), with a distribution copy at `public/licenses/Studio-Admin-MIT.txt`. Bundled Geist fonts retain their SIL Open Font License at `public/licenses/Geist-OFL.txt`. The existing map data and licensing notices are retained. No original Dashboard 2 repository or deployment is changed by this work.
+
+## Optional product tour
+
+**Take a Guided Tour** opens an independent tour of the real dashboard. **Try the Interactive Demo** opens the existing live workflow. The tour stores only its own position/visibility in `winglo-product-tour`; Back, Skip and Restart never reset business records or guided-demo progress. An optional live-demo step explains the handoff and lets you return to the product tour afterward. Missing targets show a fallback action; phone layouts wrap the compact controls, and tour scrolling respects reduced-motion preferences. The tour is never started automatically for a fresh visitor.
+
+Run `tests/browser/winglo-product-tour.cjs` with the same Playwright environment variables as the other browser suites.

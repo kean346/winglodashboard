@@ -591,3 +591,17 @@ html.dark[data-theme-preset="default"] {
 html[data-motion-preference="reduced"] .winglo-message {
   animation: none;
 }
+
+[data-product-spotlight="true"] {
+  outline: 3px solid var(--primary);
+  outline-offset: 5px;
+  border-radius: var(--radius);
+  scroll-margin-top: 20rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-product-tour] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
