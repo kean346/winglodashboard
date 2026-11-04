@@ -40,11 +40,23 @@ import { hydrateDemo, useDemo } from "../../_components/winglo/store";
 export function InteractiveDemo() {
   const { data: d, journey: j, ready, storageError } = useDemo();
   const router = useRouter();
-  const [view, setView] = useState("customer");
+  const view = j?.view ?? (j?.enquiryId ? "business" : "customer");
+  const setView = (value: string) => useDemo.getState().patchJourney({ view: value as "customer" | "business" });
   const [error, setError] = useState("");
   useEffect(() => {
     void hydrateDemo();
   }, []);
+  useEffect(() => {
+    if (j?.step === 6 || j?.completed) useDemo.getState().patchJourney({ view: "business" });
+  }, [j?.step, j?.completed]);
+  useEffect(() => {
+    if (view !== "customer" || !j?.draft.cursor) return;
+    const frame = requestAnimationFrame(() => {
+      if (window.matchMedia("(max-width: 1023px)").matches)
+        document.getElementById("demo-answer")?.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [j?.draft.cursor, view]);
   if (!ready || !d) return <Skeleton className="h-96" />;
   const store = useDemo.getState();
   if (!j)
@@ -104,6 +116,21 @@ export function InteractiveDemo() {
   function openRecord(kind: "enquiry" | "quote" | "booking" | "customer", recordId: string, route: string) {
     router.push(route);
     store.requestEditor({ kind, recordId, route });
+  }
+  let businessInstruction = "Review the customer’s answers, then tap Create Enquiry & Continue.";
+  if (enquiry)
+    businessInstruction = "The enquiry is saved. Use Next Step in the guide to prepare the quotation and booking.";
+  if (j.step >= 6)
+    businessInstruction = "The booking is ready. Tap Preview Customer Reminder in the guide to continue.";
+  if (j.completed) businessInstruction = "The journey is complete. View your summary or start a new demonstration.";
+  function createEnquiry() {
+    try {
+      const eid = store.createJourneyEnquiry();
+      toast.success(`Enquiry ${eid} created. Your dashboard records are updated.`);
+      router.push("/dashboard/enquiries");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Unable to create enquiry.");
+    }
   }
   const restart = () => {
     store.startJourney(true);
@@ -166,10 +193,26 @@ export function InteractiveDemo() {
           </div>
         </Panel>
       )}
+      <section id="demo-views" className="scroll-mt-16 lg:hidden">
+        <Panel
+          title={view === "customer" ? "1. You are the customer" : "2. You are Winglo Business"}
+          description={
+            view === "customer"
+              ? "Answer the cleaning questions below. We’ll switch to Winglo Business when you’re finished."
+              : businessInstruction
+          }
+        >
+          {null}
+        </Panel>
+      </section>
       <Tabs value={view} onValueChange={setView}>
         <TabsList className="w-full lg:hidden">
-          <TabsTrigger value="customer">Customer View</TabsTrigger>
-          <TabsTrigger value="business">Business View</TabsTrigger>
+          <TabsTrigger value="customer" aria-label="Customer View">
+            1. Customer View
+          </TabsTrigger>
+          <TabsTrigger value="business" aria-label="Business View">
+            2. Business View
+          </TabsTrigger>
         </TabsList>
         <div className="grid items-start gap-5 lg:grid-cols-2">
           <TabsContent
@@ -188,7 +231,7 @@ export function InteractiveDemo() {
                 </div>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
-                <div className="h-80 sm:h-96">
+                <div className="h-44 sm:h-96">
                   <MessageScrollerProvider autoScroll>
                     <MessageScroller>
                       <MessageScrollerViewport>
@@ -235,7 +278,8 @@ export function InteractiveDemo() {
                 </p>
                 {!enquiry && current && (
                   <form
-                    className="flex flex-col gap-3 border-t pt-4"
+                    id="demo-answer"
+                    className="flex scroll-mt-16 flex-col gap-3 border-t pt-4"
                     onSubmit={(e) => {
                       e.preventDefault();
                       if (!answerValid(current, answerFor(draft, current.key))) {
@@ -248,6 +292,10 @@ export function InteractiveDemo() {
                       }
                       setError("");
                       store.patchDraft({ cursor: cursor + 1 });
+                      if (cursor + 1 === questions.length) {
+                        setView("business");
+                        document.getElementById("demo-views")?.scrollIntoView({ block: "start" });
+                      }
                       if (j.step === 0) store.patchJourney({ step: 1 });
                     }}
                   >
@@ -296,10 +344,22 @@ export function InteractiveDemo() {
                       </p>
                     )}
                     <Button type="submit">
-                      Send response
+                      Continue
                       <ArrowRight data-icon="inline-end" />
                     </Button>
                   </form>
+                )}
+                {complete && !enquiry && (
+                  <Button
+                    className="min-h-11 lg:hidden"
+                    onClick={() => {
+                      store.patchJourney({ view: "business", step: 1 });
+                      document.getElementById("demo-views")?.scrollIntoView({ block: "start" });
+                    }}
+                  >
+                    Continue as Winglo — Review Enquiry
+                    <ArrowRight data-icon="inline-end" />
+                  </Button>
                 )}
                 {!enquiry && cursor > 0 && (
                   <Button
@@ -314,7 +374,15 @@ export function InteractiveDemo() {
                   </Button>
                 )}
                 {!enquiry && (
-                  <Button variant="ghost" onClick={() => store.patchDraft(sampleDraft(j, d))}>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      const sample = sampleDraft(j, d);
+                      store.patchDraft({ ...sample, cursor: conversationQuestions(sample, d).length });
+                      store.patchJourney({ view: "business", step: 1 });
+                      document.getElementById("demo-views")?.scrollIntoView({ block: "start" });
+                    }}
+                  >
                     Use fictional example details
                   </Button>
                 )}
@@ -337,6 +405,17 @@ export function InteractiveDemo() {
           >
             <div className="flex flex-col gap-5">
               <Panel title="New Customer Enquiry" description="Captured live from the customer conversation">
+                {!enquiry && complete && (
+                  <div className="mb-5 flex flex-col gap-3">
+                    <p className="text-primary text-sm">
+                      Your customer’s details are ready. Save them to continue as Winglo.
+                    </p>
+                    <Button className="min-h-11 w-full" onClick={createEnquiry}>
+                      Create Enquiry & Continue
+                      <ArrowRight data-icon="inline-end" />
+                    </Button>
+                  </div>
+                )}
                 <dl className="grid gap-4 sm:grid-cols-2">
                   {[
                     ["Customer", draft.name || "Waiting for customer name"],
@@ -362,22 +441,12 @@ export function InteractiveDemo() {
                       Customer details complete — Ready for quotation
                     </p>
                   )}
-                  {!enquiry ? (
-                    <Button
-                      disabled={!complete}
-                      onClick={() => {
-                        try {
-                          const eid = store.createJourneyEnquiry();
-                          toast.success(`Enquiry ${eid} created. Your dashboard records are updated.`);
-                          router.push("/dashboard/enquiries");
-                        } catch (e) {
-                          setError(e instanceof Error ? e.message : "Unable to create enquiry.");
-                        }
-                      }}
-                    >
-                      Create Enquiry & Continue
+                  {!complete && !enquiry && (
+                    <Button variant="outline" className="lg:hidden" onClick={() => setView("customer")}>
+                      Back to Customer Questions
                     </Button>
-                  ) : (
+                  )}
+                  {enquiry && (
                     <>
                       <p className="text-muted-foreground text-xs">
                         Saved enquiry ID: {enquiry.id} · Customer: {customer?.name}

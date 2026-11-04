@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { usePathname, useRouter } from "next/navigation";
 
+import { cn } from "cn";
 import { ArrowLeft, ArrowRight, Minimize2, Pause, Play, RotateCcw, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
-import { type Journey, stageReady, stages } from "./journey";
+import { draftComplete, type Journey, stageReady, stages } from "./journey";
 import { Modal } from "./shared";
 import { hydrateDemo, useDemo } from "./store";
 
@@ -80,9 +81,37 @@ export function JourneyPanel() {
         </Card>
       </aside>
     );
+  const collecting = pathname === "/dashboard/demo" && j.step < 2 && !j.completed;
   return (
     <aside className="pointer-events-none sticky bottom-3 mx-4 mb-4" aria-label="Guided demo progress">
-      <Card className="pointer-events-auto ml-auto max-h-[38dvh] w-full max-w-xl overflow-y-auto sm:max-h-none">
+      {collecting && (
+        <Card className="pointer-events-auto sm:hidden">
+          <CardContent className="flex items-center justify-between gap-3 py-3">
+            <div>
+              <p className="text-primary text-xs">Stage {j.step + 1} of 8</p>
+              <p className="mt-1 text-sm">
+                {draftComplete(j, data)
+                  ? "Ready — tap Create Enquiry & Continue above"
+                  : "Answer the customer questions above to continue"}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Minimise demo"
+              onClick={() => store.patchJourney({ minimized: true })}
+            >
+              <Minimize2 />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+      <Card
+        className={cn(
+          "pointer-events-auto ml-auto max-h-[38dvh] w-full max-w-xl overflow-y-auto sm:max-h-none",
+          collecting && "hidden sm:block",
+        )}
+      >
         <CardContent className="flex flex-col gap-3 pt-4">
           <div className="flex items-start justify-between gap-3">
             <div>

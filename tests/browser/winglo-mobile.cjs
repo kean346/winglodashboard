@@ -43,8 +43,8 @@ const path = require("node:path");
   await quotes.getByRole("button", { name: "Simulate Acceptance", exact: true }).first().click();
   await quotes.getByRole("button", { name: "Convert to booking", exact: true }).first().click();
   await dialog.getByLabel("Date and start time", { exact: true }).fill("2026-11-20T14:00");
-  await dialog.getByLabel("Booking status", { exact: true }).selectOption("Confirmed");
-  await dialog.getByRole("button", { name: "Save booking", exact: true }).click();
+  await dialog.getByRole("radio", { name: "Confirmed", exact: true }).click();
+  await dialog.getByRole("button", { name: /^(Save booking|Confirm Booking & Continue)$/, exact: true }).click();
   assert.ok(
     await p.evaluate(() =>
       JSON.parse(localStorage.getItem("winglo-demo-v1")).state.data.bookings.some(

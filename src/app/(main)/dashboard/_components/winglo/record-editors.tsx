@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 import {
   type Booking,
@@ -12,6 +13,7 @@ import {
   type Enquiry,
   estimate,
   id,
+  isInteractiveBooking,
   localDate,
   money,
   overlaps,
@@ -205,10 +207,11 @@ export function BookingEditor({
       staffId: data.settings.staff[0]?.id ?? "",
       notes: "",
       amount: quote ? total(quote) : data.settings.services[0].base,
-      status: "Pending",
+      status: enquiry?.scenarioId ? "Confirmed" : "Pending",
     },
   );
-  const conflicts = data.bookings.filter((b) => overlaps(value, b));
+  const guided = isInteractiveBooking(value, data);
+  const conflicts = guided ? [] : data.bookings.filter((b) => !isInteractiveBooking(b, data) && overlaps(value, b));
   const existing = quote && data.bookings.find((b) => b.quoteId === quote.id);
   return (
     <form
@@ -299,18 +302,37 @@ export function BookingEditor({
           options={[{ id: "", name: "Unassigned" }, ...data.settings.staff]}
           onChange={(v) => setValue({ ...value, staffId: v })}
         />
-        <Choice
-          label="Booking status"
-          value={value.status}
-          options={bookingStatuses}
-          onChange={(v) => setValue({ ...value, status: v as Booking["status"] })}
-        />
         <TextField
           label="Booking notes"
           value={value.notes}
           onChange={(e) => setValue({ ...value, notes: e.target.value })}
         />
       </FieldGroup>
+      <fieldset className="flex flex-col gap-3 rounded-lg border p-3">
+        <legend className="px-1 text-sm font-medium">Booking status</legend>
+        <p className="text-muted-foreground text-xs">
+          Choose what happens next. Confirmed means the cleaning appointment is scheduled.
+        </p>
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          aria-label="Booking status"
+          value={value.status}
+          onValueChange={(status) => {
+            if (status) setValue({ ...value, status: status as Booking["status"] });
+          }}
+          className="flex flex-wrap gap-2"
+        >
+          {bookingStatuses.map((status) => (
+            <ToggleGroupItem key={status} value={status} className="min-h-11 flex-auto rounded-lg px-3">
+              {status}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+        <p role="status" className="text-primary text-xs">
+          Selected: {value.status}
+        </p>
+      </fieldset>
       {conflicts.length > 0 && (
         <p role="alert" className="text-destructive text-sm">
           Cleaner conflict: {conflicts.length} overlapping job(s). Choose another cleaner or time.
@@ -320,7 +342,7 @@ export function BookingEditor({
         Simulation Only · Completed jobs count towards demo revenue and customer history.
       </p>
       <Button type="submit" disabled={!!existing && !initial}>
-        Save booking
+        {guided && value.status === "Confirmed" ? "Confirm Booking & Continue" : "Save booking"}
       </Button>
     </form>
   );

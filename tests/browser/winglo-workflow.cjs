@@ -37,10 +37,10 @@ const saved = (p) => p.evaluate(() => JSON.parse(localStorage.getItem("winglo-de
   const guide = p.getByRole("complementary", { name: "Guided demo progress" });
   await guide.getByRole("button", { name: "Next Step", exact: true }).click();
   await p.getByRole("radio", { name: "Home Deep Cleaning", exact: true }).click();
-  await p.getByRole("button", { name: "Send response", exact: true }).click();
+  await p.getByRole("button", { name: "Continue", exact: true }).click();
   const send = async (label, value) => {
     await p.getByLabel(label, { exact: true }).fill(value);
-    await p.getByRole("button", { name: "Send response", exact: true }).click();
+    await p.getByRole("button", { name: "Continue", exact: true }).click();
   };
   await send("How many bedrooms?", "3");
   await send("How many bathrooms?", "2");
@@ -49,16 +49,16 @@ const saved = (p) => p.evaluate(() => JSON.parse(localStorage.getItem("winglo-de
   assert.equal((await saved(p)).journey.draft.answers.bedrooms, "3");
   await send("Property size (m²)", "120");
   await p.getByRole("radio", { name: "Yes", exact: true }).click();
-  await p.getByRole("button", { name: "Send response", exact: true }).click();
+  await p.getByRole("button", { name: "Continue", exact: true }).click();
   await p.getByRole("radio", { name: "Windows", exact: true }).click();
-  await p.getByRole("button", { name: "Send response", exact: true }).click();
+  await p.getByRole("button", { name: "Continue", exact: true }).click();
   await send("Which suburb is the property in?", "Linden, Johannesburg");
-  await p.getByRole("button", { name: "Send response", exact: true }).click();
+  await p.getByRole("button", { name: "Continue", exact: true }).click();
   await send("What is your full name?", "Zanele Journey Test");
   await send("What is your contact number?", "+27 00 987 6543");
   await p.getByRole("button", { name: "Previous answer", exact: true }).click();
   assert.equal(await p.getByLabel("What is your contact number?", { exact: true }).inputValue(), "+27 00 987 6543");
-  await p.getByRole("button", { name: "Send response", exact: true }).click();
+  await p.getByRole("button", { name: "Continue", exact: true }).click();
   await guide.getByRole("button", { name: "Minimise demo", exact: true }).click();
   await p.goto(`${base}/dashboard/customers`);
   await p.reload();
@@ -117,8 +117,8 @@ const saved = (p) => p.evaluate(() => JSON.parse(localStorage.getItem("winglo-de
   date.setDate(1); // current month, different time from fictional seed bookings
   const start = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-01T14:00`;
   await dialog.getByLabel("Date and start time", { exact: true }).fill(start);
-  await dialog.getByLabel("Booking status", { exact: true }).selectOption("Confirmed");
-  await dialog.getByRole("button", { name: "Save booking", exact: true }).click();
+  await dialog.getByRole("radio", { name: "Confirmed", exact: true }).click();
+  await dialog.getByRole("button", { name: /^(Save booking|Confirm Booking & Continue)$/, exact: true }).click();
   state = await saved(p);
   const booking = state.data.bookings.find((b) => b.id === state.journey.bookingId);
   assert.equal(booking.quoteId, quote.id);
@@ -145,8 +145,8 @@ const saved = (p) => p.evaluate(() => JSON.parse(localStorage.getItem("winglo-de
   assert.equal((await saved(p)).journey.reminderPreviewed, true);
   assert.ok((await p.locator("blockquote").textContent()).includes("Zanele Journey Test"));
   await guide.getByRole("button", { name: "Next Step", exact: true }).click();
-  await dialog.getByLabel("Booking status", { exact: true }).selectOption("Completed");
-  await dialog.getByRole("button", { name: "Save booking", exact: true }).click();
+  await dialog.getByRole("radio", { name: "Completed", exact: true }).click();
+  await dialog.getByRole("button", { name: /^(Save booking|Confirm Booking & Continue)$/, exact: true }).click();
   await guide.getByRole("button", { name: "Next Step", exact: true }).click();
   await p.getByText("Customer journey complete", { exact: true }).waitFor();
   state = await saved(p);
@@ -242,10 +242,11 @@ const saved = (p) => p.evaluate(() => JSON.parse(localStorage.getItem("winglo-de
     ["Post-Renovation Cleaning", "Property size (m²)"],
     ["Office Cleaning", "Office size (m²)"],
   ]) {
+    await p.getByRole("tab", { name: "Customer View", exact: true }).click();
     await p.getByRole("button", { name: "Restart conversation", exact: true }).click();
     await p.getByRole("tab", { name: "Customer View", exact: true }).click();
     await p.getByRole("radio", { name: service, exact: true }).click();
-    await p.getByRole("button", { name: "Send response", exact: true }).click();
+    await p.getByRole("button", { name: "Continue", exact: true }).click();
     await p.getByLabel(question, { exact: true }).waitFor();
   }
   await p.goto(`${base}/dashboard/settings`);

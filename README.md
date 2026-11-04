@@ -14,6 +14,8 @@ Overview retains its original KPI and chart sections while adding a compact next
 
 The demo now starts in light mode; choosing dark mode remains saved. Full animation is permanently enabled, including when a device or older saved preference requested reduced motion; there is no animation control. At phone widths the management tables adapt to enquiry, quotation, booking and customer cards with visible actions. Desktop tables remain available at larger widths, and the floating journey panel is height-limited on phones.
 
+On phones the interactive demo explains which role you are playing, brings each next question into view, and switches automatically from Customer View to Winglo Business when the answers are complete. The selected role survives refresh. Booking status is chosen with buttons at the bottom of the form; guided bookings default to Confirmed with a **Confirm Booking & Continue** action. Cleaner availability does not block scenario-linked presentation bookings, and those simulated appointments do not reserve availability for ordinary management bookings. Ordinary booking conflict validation remains in place.
+
 ## Develop
 
 Use Node 24 (validated with 24.19.0) and npm:

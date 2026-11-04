@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import type { Metadata } from "next";
 
 import { ApplicationMotion } from "@/components/motion/application-motion";
-import { Toaster } from "@/components/ui/sonner";
+import { ResponsiveToaster } from "@/components/responsive-toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { APP_CONFIG } from "@/config/app-config";
 import { fontVars } from "@/lib/fonts/registry";
@@ -54,7 +54,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         <TooltipProvider>
           <PreferencesStoreProvider initialValues={PREFERENCE_DEFAULTS}>
             <ApplicationMotion>{children}</ApplicationMotion>
-            <Toaster />
+            <ResponsiveToaster />
           </PreferencesStoreProvider>
         </TooltipProvider>
       </body>

@@ -12,7 +12,17 @@ import {
   recordActivity,
   stageReady,
 } from "./journey";
-import { type Booking, type Customer, type DemoData, type Enquiry, id, overlaps, type Quote, seed } from "./model";
+import {
+  type Booking,
+  type Customer,
+  type DemoData,
+  type Enquiry,
+  id,
+  isInteractiveBooking,
+  overlaps,
+  type Quote,
+  seed,
+} from "./model";
 
 export type EditorRequest = {
   kind: "enquiry" | "quote" | "booking" | "customer";
@@ -165,7 +175,10 @@ export const useDemo = create<DemoStore>()(
             quote.serviceId !== input.serviceId)
         )
           throw new Error("Use an accepted quotation with the same customer and service.");
-        if (data.bookings.some((b) => overlaps(input, b)))
+        if (
+          !isInteractiveBooking(input, data) &&
+          data.bookings.some((b) => !isInteractiveBooking(b, data) && overlaps(input, b))
+        )
           throw new Error("Choose another cleaner or time; this assignment overlaps an existing job.");
         get().update((d) => ({
           ...d,

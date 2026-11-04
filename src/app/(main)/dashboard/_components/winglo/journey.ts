@@ -10,6 +10,7 @@ export type ConversationDraft = {
   cursor: number;
 };
 export type Journey = {
+  view?: "customer" | "business";
   scenarioId: string;
   active: boolean;
   paused: boolean;

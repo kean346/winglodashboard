@@ -131,6 +131,11 @@ export function estimate(enquiry: Enquiry, settings: Settings) {
     vat: settings.vat,
   };
 }
+/** Scenario bookings are presentation records and do not reserve cleaner availability. */
+export function isInteractiveBooking(booking: Pick<Booking, "quoteId">, data: DemoData) {
+  const quote = data.quotes.find((q) => q.id === booking.quoteId);
+  return !!data.enquiries.find((e) => e.id === quote?.enquiryId)?.scenarioId;
+}
 export function overlaps(a: Booking, b: Booking) {
   return (
     a.id !== b.id &&
