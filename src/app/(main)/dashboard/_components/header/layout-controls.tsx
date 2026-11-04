@@ -3,7 +3,6 @@
 import { Settings } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 
-import { MotionPreferences } from "@/components/motion/motion-preferences";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -233,7 +232,6 @@ export function LayoutControls() {
               </ToggleGroup>
             </div>
 
-            <MotionPreferences />
             <Button type="button" size="sm" variant="outline" className="w-full text-xs" onClick={resetPreferences}>
               Restore Defaults
             </Button>

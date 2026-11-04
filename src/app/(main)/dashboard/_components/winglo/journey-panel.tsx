@@ -59,7 +59,7 @@ export function JourneyPanel() {
   if (j.minimized || j.paused)
     return (
       <aside className="pointer-events-none sticky bottom-3 mx-4 mb-4" aria-label="Guided demo progress">
-        <Card className="pointer-events-auto ml-auto w-full max-w-xl">
+        <Card className="pointer-events-auto ml-auto max-h-[38dvh] w-full max-w-xl overflow-y-auto sm:max-h-none">
           <CardContent className="flex flex-wrap items-center gap-3 pt-4">
             <span className="text-muted-foreground text-xs">
               Demo {j.paused ? "paused" : "minimised"} · Stage {j.step + 1}/8
@@ -82,7 +82,7 @@ export function JourneyPanel() {
     );
   return (
     <aside className="pointer-events-none sticky bottom-3 mx-4 mb-4" aria-label="Guided demo progress">
-      <Card className="pointer-events-auto ml-auto w-full max-w-xl">
+      <Card className="pointer-events-auto ml-auto max-h-[38dvh] w-full max-w-xl overflow-y-auto sm:max-h-none">
         <CardContent className="flex flex-col gap-3 pt-4">
           <div className="flex items-start justify-between gap-3">
             <div>

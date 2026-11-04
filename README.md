@@ -12,6 +12,8 @@ Routine confirmation/start actions offer a short Undo window. Undo refuses to ov
 
 Overview retains its original KPI and chart sections while adding a compact next-actions panel and a live booking-status breakdown. Booking details combine saved customer, service, date/time, cleaner, amount, a responsive workflow stepper and recorded activity. Existing calendar views are retained with a status legend, pending-state styling and cleaner/duration tooltips. Shared primitives, fonts, themes and navigation remain unchanged.
 
+The demo now starts in light mode; choosing dark mode remains saved. Full animation is permanently enabled, including when a device or older saved preference requested reduced motion; there is no animation control. At phone widths the management tables adapt to enquiry, quotation, booking and customer cards with visible actions. Desktop tables remain available at larger widths, and the floating journey panel is height-limited on phones.
+
 ## Develop
 
 Use Node 24 (validated with 24.19.0) and npm:

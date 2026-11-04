@@ -102,6 +102,8 @@ const state = (p) => p.evaluate(() => JSON.parse(localStorage.getItem("winglo-de
   assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   assert.ok(await modal.evaluate((e) => e.scrollWidth <= e.clientWidth + 1));
   await modal.getByRole("button", { name: "Close", exact: true }).click();
+  await p.getByRole("region", { name: "Mobile cleaning appointments", exact: true }).waitFor();
+  await p.setViewportSize({ width: 1440, height: 1000 });
   await p.getByLabel("Filter status", { exact: true }).selectOption("Completed");
   await row.waitFor();
   assert.deepEqual(errors, []);

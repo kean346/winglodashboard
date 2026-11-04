@@ -87,7 +87,7 @@ export function Overview({
     .sort((a, b) => a.start.localeCompare(b.start));
   return (
     <div className="flex flex-col gap-5">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {kpis.map((k) => (
           <Card key={k.label}>
             <CardHeader>
@@ -95,7 +95,7 @@ export function Overview({
                 <CardDescription>{k.label}</CardDescription>
                 <k.icon className="text-primary size-4" />
               </div>
-              <CardTitle className="text-3xl tracking-tight tabular-nums">{k.value}</CardTitle>
+              <CardTitle className="text-2xl tracking-tight tabular-nums sm:text-3xl">{k.value}</CardTitle>
               <CardDescription>{k.caption}</CardDescription>
             </CardHeader>
           </Card>

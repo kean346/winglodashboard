@@ -36,6 +36,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
     <html
       lang="en"
       className={fontVars}
+      data-motion-preference="full"
       data-theme-mode={theme_mode}
       data-theme-preset={theme_preset}
       data-content-layout={content_layout}

@@ -343,7 +343,150 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
               </p>
             </>
           )}
+          {section === "Enquiries" && (
+            <section className="grid gap-3 sm:hidden [&_button]:min-h-11" aria-label="Mobile enquiries">
+              {d.enquiries
+                .filter((e) =>
+                  matches(
+                    `${customer(e.customerId)?.name} ${customer(e.customerId)?.phone} ${customer(e.customerId)?.location} ${service(e.serviceId)}`,
+                    e.status,
+                  ),
+                )
+                .map((e) => (
+                  <Panel
+                    key={e.id}
+                    title={customer(e.customerId)?.name ?? "Customer"}
+                    description={service(e.serviceId)}
+                  >
+                    <div className="flex flex-col gap-3">
+                      <Status>{e.status}</Status>
+                      <p className="text-sm">{customer(e.customerId)?.location}</p>
+                      <p className="text-muted-foreground text-xs">
+                        {customer(e.customerId)?.phone} · {e.date.slice(0, 10)}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" onClick={() => editEnquiry(e)}>
+                          View / edit
+                        </Button>
+                        <Button onClick={() => createFrom(e)}>Create quote</Button>
+                      </div>
+                    </div>
+                  </Panel>
+                ))}
+            </section>
+          )}
+          {section === "Quotations" && (
+            <section className="grid gap-3 sm:hidden [&_button]:min-h-11" aria-label="Mobile quotations">
+              {d.quotes
+                .filter((q) => matches(`${customer(q.customerId)?.name} ${service(q.serviceId)} ${q.id}`, q.status))
+                .map((q) => (
+                  <Panel
+                    key={q.id}
+                    title={customer(q.customerId)?.name ?? "Customer"}
+                    description={service(q.serviceId)}
+                  >
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-wrap justify-between gap-2">
+                        <Status>{q.status}</Status>
+                        <strong>{money(total(q))}</strong>
+                      </div>
+                      <p className="text-muted-foreground text-xs">{q.id} · Sample estimate</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" onClick={() => editQuote(q)}>
+                          View / edit
+                        </Button>
+                        <Button variant="outline" onClick={() => printQuote(q, d)}>
+                          Print / PDF
+                        </Button>
+                        {["Draft", "Awaiting Approval"].includes(q.status) && (
+                          <Button onClick={() => setQuoteStatus(q, "Sent (Simulated)")}>Approve Quotation</Button>
+                        )}
+                        {q.status === "Sent (Simulated)" && (
+                          <Button onClick={() => setQuoteStatus(q, "Accepted (Simulated)")}>Simulate Acceptance</Button>
+                        )}
+                        {q.status === "Accepted (Simulated)" && (
+                          <Button onClick={() => convert(q)}>
+                            {d.bookings.some((b) => b.quoteId === q.id) ? "View booking" : "Convert to booking"}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </Panel>
+                ))}
+            </section>
+          )}
+          {section === "Customers" && (
+            <section className="grid gap-3 sm:hidden [&_button]:min-h-11" aria-label="Mobile customers">
+              {d.customers
+                .filter((c) => matches(`${c.name} ${c.phone} ${c.email} ${c.location}`))
+                .map((c) => (
+                  <Panel key={c.id} title={c.name} description={c.location}>
+                    <div className="flex flex-col gap-3">
+                      <p className="text-sm">{c.phone}</p>
+                      <p className="text-muted-foreground text-xs break-all">{c.email}</p>
+                      <p className="text-sm">
+                        {d.bookings.filter((b) => b.customerId === c.id && b.status === "Completed").length} completed
+                        cleans
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" onClick={() => setEditor({ kind: "customer", value: c })}>
+                          Customer profile
+                        </Button>
+                        <Button onClick={() => setEditor({ kind: "booking", customerId: c.id })}>Repeat booking</Button>
+                      </div>
+                    </div>
+                  </Panel>
+                ))}
+            </section>
+          )}
+          {section === "Bookings" && (
+            <section className="grid gap-3 sm:hidden [&_button]:min-h-11" aria-label="Mobile cleaning appointments">
+              {d.bookings
+                .filter(
+                  (b) => inRange(b) && matches(`${customer(b.customerId)?.name} ${service(b.serviceId)}`, b.status),
+                )
+                .sort((a, b) => {
+                  const rank = (b: Booking) => {
+                    if (journey?.active && journey.bookingId === b.id) return 0;
+                    return ["Completed", "Cancelled"].includes(b.status) ? 2 : 1;
+                  };
+                  return rank(a) - rank(b) || a.start.localeCompare(b.start);
+                })
+                .map((b) => (
+                  <Panel
+                    key={b.id}
+                    title={customer(b.customerId)?.name ?? "Customer"}
+                    description={service(b.serviceId)}
+                  >
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <Status>{b.status}</Status>
+                        <span className="text-sm font-medium">{money(b.amount)}</span>
+                      </div>
+                      <p className="text-sm">
+                        {b.start.replace("T", " · ")} · {b.duration} hours
+                      </p>
+                      <p className="text-muted-foreground text-xs">
+                        {d.settings.staff.find((s) => s.id === b.staffId)?.name ?? "Unassigned"}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <NextActionButton booking={b} />
+                        <Button size="sm" variant="outline" onClick={() => editBooking(b)}>
+                          View / reschedule
+                        </Button>
+                      </div>
+                    </div>
+                  </Panel>
+                ))}
+            </section>
+          )}
+          {visibleRecordCount() === 0 && (
+            <div className="sm:hidden">
+              <EmptyRecords />
+            </div>
+          )}
           <Panel
+            className="hidden sm:block"
             title={section === "Bookings" ? "Cleaning appointments" : `${section} directory`}
             description="Fictional records · Changes persist on this browser only"
           >

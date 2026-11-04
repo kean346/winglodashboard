@@ -6,8 +6,6 @@ import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 
-const THEME_CYCLE = ["light", "dark", "system"] as const;
-
 export function ThemeSwitcher() {
   const { themeMode, setPreference } = usePreferencesStore(
     useShallow((state) => ({
@@ -17,8 +15,7 @@ export function ThemeSwitcher() {
   );
 
   const cycleTheme = () => {
-    const currentIndex = THEME_CYCLE.indexOf(themeMode);
-    const nextTheme = THEME_CYCLE[(currentIndex + 1) % THEME_CYCLE.length];
+    const nextTheme = themeMode === "light" ? "dark" : "light";
 
     setPreference("theme_mode", nextTheme);
   };
