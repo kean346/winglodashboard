@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
+import { cn } from "cn";
 import { CalendarDays, Compass, FileText, MessageCircle, Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
@@ -13,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 import { DemoActivity } from "./activity";
 import { BookingCalendar } from "./booking-calendar";
+import { DirectoryCards } from "./directory-cards";
 import { EnquiryForm } from "./enquiry-form";
 import { jobUrl } from "./job-model";
 import {
@@ -45,6 +47,7 @@ type Editor =
 export function Workspace({ section = "Overview", publicForm = false }: { section?: Section; publicForm?: boolean }) {
   const { data: d, ready, update, storageError } = useDemo();
   const [editor, setEditor] = useState<Editor | null>(null);
+  const [directoryView, setDirectoryView] = useState("cards");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All statuses");
   const [appointmentRange, setAppointmentRange] = useState("All appointments");
@@ -93,13 +96,14 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
   useEffect(() => {
     if (!ready || !journey?.active || !highlightedId) return;
     const frame = requestAnimationFrame(() => {
-      const mobile = window.matchMedia("(max-width: 639px)").matches;
+      const mobile =
+        window.matchMedia("(max-width: 639px)").matches || (section !== "Bookings" && directoryView === "cards");
       document
         .getElementById(mobile ? `mobile-${highlightedId}` : highlightedId)
         ?.scrollIntoView({ block: mobile ? "center" : "nearest" });
     });
     return () => cancelAnimationFrame(frame);
-  }, [ready, journey?.active, highlightedId]);
+  }, [ready, journey?.active, highlightedId, section, directoryView]);
   if (!ready || !d)
     return (
       <div className="flex flex-col gap-4" role="status" aria-label="Loading Winglo workspace">
@@ -155,7 +159,7 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
     if (section === "Enquiries")
       return d.enquiries.filter((e) =>
         matches(
-          `${customer(e.customerId)?.name} ${customer(e.customerId)?.phone} ${customer(e.customerId)?.location} ${service(e.serviceId)}`,
+          `${customer(e.customerId)?.name} ${customer(e.customerId)?.phone} ${customer(e.customerId)?.location} ${service(e.serviceId)} ${e.id}`,
           e.status,
         ),
       ).length;
@@ -292,12 +296,14 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                 />
               </div>
               {section !== "Customers" && (
-                <Choice
-                  label="Filter status"
-                  value={filter}
-                  onChange={setFilter}
-                  options={["All statuses", ...(statusOptions[section] ?? [])]}
-                />
+                <div className="w-full sm:w-44">
+                  <Choice
+                    label="Filter status"
+                    value={filter}
+                    onChange={setFilter}
+                    options={["All statuses", ...(statusOptions[section] ?? [])]}
+                  />
+                </div>
               )}
             </div>
             <div className="flex flex-wrap gap-2">
@@ -311,6 +317,15 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                     <Link href="/enquire">Customer form</Link>
                   </Button>
                 </>
+              )}
+              {section !== "Bookings" && (
+                <Button
+                  className="hidden sm:inline-flex"
+                  variant="outline"
+                  onClick={() => setDirectoryView(directoryView === "cards" ? "table" : "cards")}
+                >
+                  {directoryView === "cards" ? "Table view" : "Card view"}
+                </Button>
               )}
               <Button onClick={createRecord}>
                 <Plus data-icon="inline-start" />
@@ -333,102 +348,18 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
               </p>
             </>
           )}
-          {section === "Enquiries" && (
-            <section className="grid gap-3 sm:hidden [&_button]:min-h-11" aria-label="Mobile enquiries">
-              {d.enquiries
-                .filter((e) =>
-                  matches(
-                    `${customer(e.customerId)?.name} ${customer(e.customerId)?.phone} ${customer(e.customerId)?.location} ${service(e.serviceId)}`,
-                    e.status,
-                  ),
-                )
-                .map((e) => (
-                  <Panel
-                    key={e.id}
-                    id={`mobile-${e.id}`}
-                    highlighted={journey?.active && highlightedId === e.id}
-                    highlightLabel="Your demo enquiry"
-                    title={customer(e.customerId)?.name ?? "Customer"}
-                    description={service(e.serviceId)}
-                  >
-                    <div className="flex flex-col gap-3">
-                      <Status>{e.status}</Status>
-                      <p className="text-sm">{customer(e.customerId)?.location}</p>
-                      <p className="text-muted-foreground text-xs">
-                        {customer(e.customerId)?.phone} · {e.date.slice(0, 10)}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" onClick={() => editEnquiry(e)}>
-                          Open Job
-                        </Button>
-                      </div>
-                    </div>
-                  </Panel>
-                ))}
-            </section>
-          )}
-          {section === "Quotations" && (
-            <section className="grid gap-3 sm:hidden [&_button]:min-h-11" aria-label="Mobile quotations">
-              {d.quotes
-                .filter((q) => matches(`${customer(q.customerId)?.name} ${service(q.serviceId)} ${q.id}`, q.status))
-                .map((q) => (
-                  <Panel
-                    key={q.id}
-                    id={`mobile-${q.id}`}
-                    highlighted={journey?.active && highlightedId === q.id}
-                    highlightLabel="Your demo quotation"
-                    title={customer(q.customerId)?.name ?? "Customer"}
-                    description={service(q.serviceId)}
-                  >
-                    <div className="flex flex-col gap-3">
-                      <div className="flex flex-wrap justify-between gap-2">
-                        <Status>{q.status}</Status>
-                        <strong>{money(total(q))}</strong>
-                      </div>
-                      <p className="text-muted-foreground text-xs">{q.id} · Sample estimate</p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" onClick={() => editQuote(q)}>
-                          Open Job
-                        </Button>
-                        <Button variant="outline" onClick={() => printQuote(q, d)}>
-                          Print / PDF
-                        </Button>
-                      </div>
-                    </div>
-                  </Panel>
-                ))}
-            </section>
-          )}
-          {section === "Customers" && (
-            <section className="grid gap-3 sm:hidden [&_button]:min-h-11" aria-label="Mobile customers">
-              {d.customers
-                .filter((c) => matches(`${c.name} ${c.phone} ${c.email} ${c.location}`))
-                .map((c) => (
-                  <Panel
-                    key={c.id}
-                    id={`mobile-${c.id}`}
-                    highlighted={journey?.active && highlightedId === c.id}
-                    highlightLabel="Your demo customer"
-                    title={c.name}
-                    description={c.location}
-                  >
-                    <div className="flex flex-col gap-3">
-                      <p className="text-sm">{c.phone}</p>
-                      <p className="text-muted-foreground text-xs break-all">{c.email}</p>
-                      <p className="text-sm">
-                        {d.bookings.filter((b) => b.customerId === c.id && b.status === "Completed").length} completed
-                        cleans
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" onClick={() => setEditor({ kind: "customer", value: c })}>
-                          Customer profile
-                        </Button>
-                        <Button onClick={() => setEditor({ kind: "booking", customerId: c.id })}>Repeat booking</Button>
-                      </div>
-                    </div>
-                  </Panel>
-                ))}
-            </section>
+          {["Enquiries", "Quotations", "Customers"].includes(section) && (
+            <div className={cn(directoryView === "table" && "sm:hidden")}>
+              <DirectoryCards
+                section={section as "Enquiries" | "Quotations" | "Customers"}
+                data={d}
+                highlightedId={journey?.active ? highlightedId : undefined}
+                matches={matches}
+                onJob={(id) => router.push(jobUrl(id))}
+                onCustomer={(value) => setEditor({ kind: "customer", value })}
+                onRepeat={(value) => setEditor({ kind: "booking", customerId: value.id })}
+              />
+            </div>
           )}
           {section === "Bookings" && (
             <section className="grid gap-3 sm:hidden [&_button]:min-h-11" aria-label="Mobile cleaning appointments">
@@ -475,12 +406,12 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
             </section>
           )}
           {visibleRecordCount() === 0 && (
-            <div className="sm:hidden">
+            <div className={cn(section === "Bookings" || directoryView === "table" ? "sm:hidden" : "")}>
               <EmptyRecords />
             </div>
           )}
           <Panel
-            className="hidden sm:block"
+            className={cn("hidden", (section === "Bookings" || directoryView === "table") && "sm:block")}
             title={section === "Bookings" ? "Cleaning appointments" : `${section} directory`}
             description="Fictional records · Changes persist on this browser only"
           >
@@ -497,7 +428,7 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                   d.enquiries
                     .filter((e) =>
                       matches(
-                        `${customer(e.customerId)?.name} ${customer(e.customerId)?.phone} ${customer(e.customerId)?.location} ${service(e.serviceId)}`,
+                        `${customer(e.customerId)?.name} ${customer(e.customerId)?.phone} ${customer(e.customerId)?.location} ${service(e.serviceId)} ${e.id}`,
                         e.status,
                       ),
                     )

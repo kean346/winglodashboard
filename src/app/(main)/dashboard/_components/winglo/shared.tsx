@@ -91,8 +91,9 @@ export function Status({ children }: { children: ReactNode }) {
   return (
     <Badge
       variant="secondary"
+      data-status={typeof children === "string" ? children : undefined}
       className={cn(
-        "gap-1.5",
+        "winglo-status gap-1.5",
         completed && "bg-primary/10 text-primary",
         active && "border-primary/30 text-primary",
         cancelled && "bg-destructive/10 text-destructive",

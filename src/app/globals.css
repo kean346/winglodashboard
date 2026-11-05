@@ -347,7 +347,7 @@ html.dark[data-theme-preset="default"] {
   --chart-3: var(--color-slate-200);
 }
 html[data-theme-preset="default"] [data-slot="sidebar-menu-button"][data-active="true"] {
-  box-shadow: inset 2px 0 0 var(--color-slate-400);
+  box-shadow: inset 2px 0 0 var(--primary);
 }
 .noreva-logistics {
   font-size: 0.875rem;
@@ -554,24 +554,131 @@ html[data-motion-preference="full"]
   animation-duration: 200ms !important;
 }
 
-/* Winglo accents retain the template's neutral surfaces and theme architecture. */
+/* Winglo brand tokens; status colours remain independent of the accent. */
 :root:not([data-theme-preset]),
 :root[data-theme-preset="default"] {
-  --primary: var(--color-teal-700);
+  --primary: #4f46e5;
   --primary-foreground: var(--color-white);
-  --ring: var(--color-teal-600);
-  --chart-1: var(--color-teal-600);
-  --chart-2: var(--color-emerald-400);
-  --sidebar-primary: var(--color-teal-700);
+  --ring: var(--color-indigo-500);
+  --chart-1: var(--color-indigo-600);
+  --chart-2: var(--color-blue-400);
+  --chart-3: var(--color-slate-500);
+  --chart-4: var(--color-violet-400);
+  --chart-5: var(--color-sky-600);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-ring: var(--ring);
 }
 html.dark:not([data-theme-preset]),
 html.dark[data-theme-preset="default"] {
-  --primary: var(--color-teal-300);
-  --primary-foreground: var(--color-teal-950);
-  --ring: var(--color-teal-400);
-  --chart-1: var(--color-teal-300);
-  --chart-2: var(--color-emerald-500);
-  --sidebar-primary: var(--color-teal-300);
+  --primary: var(--color-indigo-300);
+  --primary-foreground: var(--color-indigo-950);
+  --ring: var(--color-indigo-400);
+  --chart-1: var(--color-indigo-300);
+  --chart-2: var(--color-blue-400);
+  --chart-3: var(--color-slate-400);
+  --chart-4: var(--color-violet-300);
+  --chart-5: var(--color-sky-400);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-ring: var(--ring);
+}
+:root {
+  --winglo-selection: var(--color-zinc-200);
+  --winglo-selection-text: var(--color-zinc-950);
+  --winglo-control-border: var(--color-zinc-400);
+  --winglo-success: var(--color-emerald-700);
+}
+html.dark {
+  --winglo-selection: var(--color-zinc-700);
+  --winglo-selection-text: var(--color-zinc-50);
+  --winglo-control-border: var(--color-zinc-500);
+  --winglo-success: var(--color-emerald-300);
+}
+.winglo-record-card {
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 5px color-mix(in srgb, var(--foreground) 3%, transparent);
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+.winglo-record-card [data-slot="button"] {
+  min-height: 2.75rem;
+}
+.winglo-record-card [data-slot="card-title"] {
+  letter-spacing: -0.02em;
+}
+.winglo-record-card [data-slot="card-footer"] {
+  margin-top: auto;
+}
+.winglo-record-card:focus-within {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 15%, transparent);
+}
+@media (hover: hover) {
+  .winglo-record-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--foreground) 7%, transparent);
+  }
+}
+.winglo-record-card:active {
+  transform: translateY(0);
+}
+.winglo-record-highlight {
+  border-color: var(--primary);
+  outline: 2px solid color-mix(in srgb, var(--primary) 30%, transparent);
+  scroll-margin-block: 6rem;
+}
+.winglo-demo-choices [data-slot="toggle-group-item"] {
+  border: 1px solid var(--winglo-control-border);
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+.winglo-demo-choices [data-state="on"] {
+  background: var(--winglo-selection);
+  color: var(--winglo-selection-text);
+  border-color: var(--winglo-selection-text);
+  box-shadow: inset 0 0 0 1px var(--winglo-selection-text);
+}
+.winglo-demo-choices [data-selection-check] {
+  visibility: hidden;
+}
+.winglo-demo-choices [data-state="on"] [data-selection-check] {
+  visibility: visible;
+}
+.winglo-count-field [data-slot="input-group"],
+.winglo-demo-input {
+  border-width: 2px;
+  border-color: var(--winglo-control-border);
+  background: var(--background);
+}
+.winglo-count-field [data-slot="input-group"]:focus-within,
+.winglo-demo-input:focus-visible {
+  border-color: var(--ring);
+}
+.winglo-count-field[data-invalid] [data-slot="input-group"] {
+  border-color: var(--destructive);
+}
+.winglo-count-field input {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+.winglo-status[data-status="Completed"],
+.winglo-status[data-status="Accepted (Simulated)"] {
+  color: var(--winglo-success);
+  background: color-mix(in srgb, var(--winglo-success) 10%, var(--background));
+}
+@media (prefers-reduced-motion: reduce) {
+  .winglo-record-card,
+  .winglo-demo-choices [data-slot="toggle-group-item"] {
+    transition: none;
+  }
+  .winglo-record-card:hover {
+    transform: none;
+  }
 }
 
 @keyframes winglo-message-enter {

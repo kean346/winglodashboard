@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import { Progress } from "@/components/ui/progress";
 
+import { CountField, countLabels } from "./count-field";
 import { type Enquiry, localDate, type Question, sampleAnswer, serviceQuestions } from "./model";
 import { Choice, TextField } from "./shared";
 import { useDemo, useDemoData } from "./store";
@@ -120,6 +121,7 @@ export function EnquiryForm({
           options={[{ id: "", name: "Choose an option" }, ...q.options]}
         />
       );
+    if (countLabels[q.key]) return <CountField label={countLabels[q.key]} value={value} onChange={update} />;
     return (
       <TextField
         label={q.label}

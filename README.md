@@ -2,6 +2,18 @@
 
 A browser-local cleaning business demo customised from the existing Studio Admin / NOREVA dashboard. The original layout, UI primitives, calendar styling, typography, theme switcher and motion system are retained. No backend or messaging provider is connected.
 
+## Premium cards and Jobs
+
+The dashboard now uses a royal-blue brand accent in light/dark mode. Neutral grey selections with checkmarks distinguish answers from actions; count fields provide labelled − / + controls, direct numeric entry, a zero lower bound and integer steps. Measurements retain decimal input. Existing motion stays enabled, while the new card hover transitions respect reduced-motion preferences.
+
+**Jobs** at `/dashboard/jobs` lists saved customer work using the existing record resolver: bookings, quotations without bookings, and requests without quotations. Linked parents are not repeated as separate jobs. Multiple jobs for one customer and additional legacy quote/booking branches remain individually accessible. Search and stage/status filters open the existing connected job workspace; no second job dataset is created.
+
+Enquiries, Quotations and Customers default to compact cards with a desktop **Table view** option. Profile, repeat booking, PDF, search, filters and demo-record highlighting remain available. The management calendar and business mutations are unchanged.
+
+Rollback before this update: [`backup/pre-premium-jobs-2026-11-05`](https://github.com/kean346/winglodashboard/tree/backup/pre-premium-jobs-2026-11-05), commit `dff5bc5319e104a6bd8df277066456d5125b24c5`. Code backup does not replace browser-local records.
+
+`tests/browser/winglo-premium.cjs` covers Jobs grouping/filter/search, switching jobs for the same customer, directory cards/table access, selected choices, count controls and bounds, decimal measurements, persistence, mobile and dark mode. Review screenshots use `artifacts/winglo-premium-*`.
+
 ## Visual workflow upgrade and rollback point
 
 The original pre-upgrade version is preserved at commit `538bcab191ddf22e9faa16365c4b872f441abcc0` on GitHub branch [`backup/pre-visual-upgrade-2026-11-04`](https://github.com/kean346/winglodashboard/tree/backup/pre-visual-upgrade-2026-11-04). This is a code rollback point; browser-local records are stored separately. Returning to this version does not require deleting records or changing database services.
@@ -33,7 +45,7 @@ npm ci
 npm run dev
 ```
 
-The application root redirects to `/dashboard/default`. The sidebar retains the six management sections — Overview, Enquiries, Quotations, Bookings, Customers and Settings — and adds Interactive Demo at `/dashboard/demo`. `/enquire` is a separate customer-facing demo form.
+The application root redirects to `/dashboard/default`. The sidebar retains Overview, Enquiries, Quotations, Bookings, Customers and Settings, adds Jobs at `/dashboard/jobs`, and includes Interactive Demo at `/dashboard/demo`. `/enquire` is a separate customer-facing demo form.
 
 Overview offers **Try a Sample Job**, which starts or resumes the existing conversation, and **Explore Dashboard**, which opens the management sections without starting a sample. The sidebar also retains Interactive Demo. Once submitted, **Resume Customer Job** returns to the same saved records.
 

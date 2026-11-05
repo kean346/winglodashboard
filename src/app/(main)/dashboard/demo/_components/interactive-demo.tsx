@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
+import { CountField, countLabels } from "../../_components/winglo/count-field";
 import { jobUrl } from "../../_components/winglo/job-model";
 import {
   answerFor,
@@ -151,7 +152,7 @@ export function InteractiveDemo() {
                     </MessageContent>
                   </Message>
                   <FieldGroup>
-                    {current.key === "serviceId" || current.options ? (
+                    {(current.key === "serviceId" || current.options) && (
                       <ToggleGroup
                         type="single"
                         variant="outline"
@@ -160,7 +161,7 @@ export function InteractiveDemo() {
                         onValueChange={(v) => {
                           if (v) respond(v);
                         }}
-                        className="flex flex-wrap gap-2"
+                        className="winglo-demo-choices flex flex-wrap gap-2"
                       >
                         {(current.key === "serviceId"
                           ? data.settings.services.map((s) => ({ id: s.id, label: s.name }))
@@ -171,13 +172,25 @@ export function InteractiveDemo() {
                             value={o.id}
                             className="h-auto min-h-11 flex-auto rounded-lg px-3 py-2 whitespace-normal"
                           >
+                            <Check aria-hidden data-selection-check />
                             {o.label}
                           </ToggleGroupItem>
                         ))}
                       </ToggleGroup>
-                    ) : (
+                    )}
+                    {!current.options && current.key !== "serviceId" && countLabels[current.key] && (
+                      <CountField
+                        label={countLabels[current.key]}
+                        value={answerFor(draft, current.key)}
+                        onChange={respond}
+                      />
+                    )}
+                    {!current.options && current.key !== "serviceId" && !countLabels[current.key] && (
                       <TextField
+                        className="winglo-demo-input min-h-12"
                         label={current.label}
+                        step={current.numeric ? "any" : undefined}
+                        inputMode={current.numeric ? "decimal" : undefined}
                         type={inputType}
                         min={0}
                         required
@@ -186,6 +199,11 @@ export function InteractiveDemo() {
                       />
                     )}
                   </FieldGroup>
+                  {(current.options || current.key === "serviceId") && (
+                    <p className="text-muted-foreground text-sm" role="status">
+                      {answerFor(draft, current.key) ? `Selected: ${text(current.key)}` : "Choose one option above."}
+                    </p>
+                  )}
                   <Button className="min-h-12" type="submit">
                     Continue
                     <ArrowRight data-icon="inline-end" />

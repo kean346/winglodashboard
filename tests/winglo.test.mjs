@@ -82,3 +82,31 @@ test("workspace progress follows saved state, including independent legacy booki
   assert.equal(job.customer.id, legacy.customerId);
   assert.equal(job.stage, 2);
 });
+
+test("Jobs lists each linked branch once and preserves multiple jobs for one customer", async () => {
+  const { listJobs, jobNextAction } = await import("../src/app/(main)/dashboard/_components/winglo/job-model.ts");
+  const d = seed();
+  const customer = d.customers[0];
+  const e = { ...d.enquiries[0], customerId: customer.id };
+  const q = { ...d.quotes[0], enquiryId: e.id, customerId: customer.id };
+  const b = { ...d.bookings[0], quoteId: q.id, customerId: customer.id, status: "Confirmed" };
+  const data = {
+    ...d,
+    enquiries: [e, { ...e, id: "request-only" }],
+    quotes: [q, { ...q, id: "second-quote", status: "Sent (Simulated)" }],
+    bookings: [b, { ...b, id: "second-booking" }, { ...b, id: "legacy-booking", quoteId: undefined }],
+  };
+  const jobs = listJobs(data);
+  assert.equal(jobs.length, 5);
+  assert.equal(new Set(jobs.map((j) => j.ref)).size, 5);
+  assert.ok(jobs.every((j) => j.customer.id === customer.id));
+  assert.equal(
+    jobs.filter((j) => j.quote?.id === q.id).length,
+    2,
+    "Two existing bookings must remain separately accessible",
+  );
+  assert.equal(jobs.filter((j) => j.ref === q.id || j.ref === e.id).length, 0, "No duplicate parent entries");
+  assert.equal(jobNextAction(jobs.find((j) => j.ref === b.id)), "Start Cleaning");
+  assert.equal(jobNextAction(jobs.find((j) => j.ref === "second-quote")), "Waiting for Customer");
+  assert.equal(jobs.find((j) => j.ref === "legacy-booking").enquiry, undefined);
+});

@@ -73,7 +73,10 @@ async function runConnectedJob({ mobile = false } = {}) {
         .getByRole("button", { name: "Open Job", exact: true })
         .first()
         .click();
-    else await p.locator(`[id="${id}"]`).getByRole("button", { name: "Open Job", exact: true }).click();
+    else {
+      if (route !== "bookings") await p.getByRole("button", { name: "Table view", exact: true }).click();
+      await p.locator(`[id="${id}"]`).getByRole("button", { name: "Open Job", exact: true }).click();
+    }
     await job.getByRole("heading", { name: expectedCustomer, exact: true }).waitFor();
     assert.equal((await state()).data.bookings.find((v) => v.id === b.id).quoteId, q.id);
   }

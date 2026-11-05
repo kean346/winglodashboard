@@ -73,9 +73,9 @@ export function JobWorkspace({ recordId }: { recordId: string }) {
   };
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-5 pb-8" aria-label="Customer job workspace">
-      <Button variant="ghost" className="self-start" onClick={() => router.push("/dashboard/enquiries")}>
+      <Button variant="ghost" className="self-start" onClick={() => router.push("/dashboard/jobs")}>
         <ChevronLeft data-icon="inline-start" />
-        All customer requests
+        All jobs
       </Button>
       <header className="flex flex-wrap items-start justify-between gap-4 border-b pb-5">
         <div>
