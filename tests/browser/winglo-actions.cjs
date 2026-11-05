@@ -36,10 +36,7 @@ const base = process.env.BASE_URL || "http://127.0.0.1:3000";
   const data = await p.evaluate(() => JSON.parse(localStorage.getItem("winglo-demo-v1")).state.data);
   await dialog.getByLabel("Date and start time", { exact: true }).fill(data.bookings[0].start);
   await dialog.getByLabel("Assign cleaner", { exact: true }).selectOption(data.bookings[0].staffId);
-  await dialog.getByRole("alert").filter({ hasText: "Cleaner conflict" }).waitFor();
-  await dialog.getByRole("button", { name: /^(Save booking|Confirm Booking & Continue)$/, exact: true }).click();
-  assert.equal(await dialog.count(), 1);
-  await dialog.getByLabel("Assign cleaner", { exact: true }).selectOption(data.settings.staff.at(-1).id);
+  assert.equal(await dialog.getByText(/Cleaner conflict/).count(), 0);
   await dialog.getByRole("button", { name: /^(Save booking|Confirm Booking & Continue)$/, exact: true }).click();
   await dialog.waitFor({ state: "hidden" });
   await p.goto(`${base}/dashboard/enquiries`);
@@ -53,7 +50,7 @@ const base = process.env.BASE_URL || "http://127.0.0.1:3000";
   assert.equal(await p.getByRole("button", { name: "Review Enquiry", exact: true }).count(), 1);
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: persisted pricing/VAT/staff settings; estimate prefill; printable/PDF document; week view; cleaner conflict rejection and resolution; enquiry status/filter.",
+    "PASS: persisted pricing/VAT/staff settings; estimate prefill; printable/PDF document; week view; overlapping demo booking accepted; enquiry status/filter.",
   );
   await browser.close();
 })().catch((error) => {

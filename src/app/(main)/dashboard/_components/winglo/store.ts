@@ -19,9 +19,7 @@ import {
   type Enquiry,
   estimate,
   id,
-  isInteractiveBooking,
   localDate,
-  overlaps,
   type Quote,
   seed,
 } from "./model";
@@ -197,11 +195,6 @@ export const useDemo = create<DemoStore>()(
             quote.serviceId !== input.serviceId)
         )
           throw new Error("Use an accepted quotation with the same customer and service.");
-        if (
-          !isInteractiveBooking(input, data) &&
-          data.bookings.some((b) => !isInteractiveBooking(b, data) && overlaps(input, b))
-        )
-          throw new Error("Choose another cleaner or time; this assignment overlaps an existing job.");
         get().update((d) => ({
           ...d,
           bookings: d.bookings.some((b) => b.id === input.id)

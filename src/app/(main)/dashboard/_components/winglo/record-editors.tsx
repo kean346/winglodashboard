@@ -16,7 +16,6 @@ import {
   isInteractiveBooking,
   localDate,
   money,
-  overlaps,
   type Quote,
   quoteStatuses,
   total,
@@ -227,7 +226,6 @@ export function BookingEditor({
     },
   );
   const guided = isInteractiveBooking(value, data);
-  const conflicts = guided ? [] : data.bookings.filter((b) => !isInteractiveBooking(b, data) && overlaps(value, b));
   const existing = quote && data.bookings.find((b) => b.quoteId === quote.id);
   let submitLabel = "Save booking";
   if (guided && value.status === "Confirmed") submitLabel = "Confirm Booking & Continue";
@@ -239,10 +237,6 @@ export function BookingEditor({
         e.preventDefault();
         if (existing && !initial) {
           toast.error("This quotation already has a booking.");
-          return;
-        }
-        if (conflicts.length) {
-          toast.error("Resolve the cleaner scheduling conflict before saving.");
           return;
         }
         if (!value.customerId) {
@@ -357,11 +351,6 @@ export function BookingEditor({
             Selected: {value.status}
           </p>
         </fieldset>
-      )}
-      {conflicts.length > 0 && (
-        <p role="alert" className="text-destructive text-sm">
-          Cleaner conflict: {conflicts.length} overlapping job(s). Choose another cleaner or time.
-        </p>
       )}
       <p className="text-muted-foreground text-xs">
         Simulation Only · Completed jobs count towards demo revenue and customer history.

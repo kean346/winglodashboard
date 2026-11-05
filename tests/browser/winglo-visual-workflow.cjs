@@ -61,7 +61,7 @@ const state = (p) => p.evaluate(() => JSON.parse(localStorage.getItem("winglo-de
   await job.getByText("Cleaning started", { exact: true }).waitFor();
   await job.getByText("Cleaning job completed", { exact: true }).waitFor();
   await p.goto(`${base}/dashboard/bookings`);
-  // Existing conflicting records must still be rejected by the central booking mutation.
+  // Overlapping appointments must not block demo booking actions.
   const pending = saved.data.bookings.find((v) => v.status === "Pending");
   await p.evaluate((id) => {
     const v = JSON.parse(localStorage.getItem("winglo-demo-v1"));
@@ -71,10 +71,8 @@ const state = (p) => p.evaluate(() => JSON.parse(localStorage.getItem("winglo-de
   }, pending.id);
   await p.reload();
   await p.locator(`[id="${pending.id}"]`).getByRole("button", { name: "Confirm Booking", exact: true }).click();
-  assert.equal((await state(p)).data.bookings.find((v) => v.id === pending.id).status, "Pending");
-  await p
-    .getByText("Choose another cleaner or time; this assignment overlaps an existing job.", { exact: true })
-    .waitFor();
+  assert.equal((await state(p)).data.bookings.find((v) => v.id === pending.id).status, "Confirmed");
+  assert.equal(await p.getByText(/Choose another cleaner or time/).count(), 0);
   await p.evaluate(() => {
     const v = JSON.parse(localStorage.getItem("winglo-demo-v1"));
     v.state.data.bookings = v.state.data.bookings.filter((b) => b.id !== "TEST-CONFLICT");
@@ -109,7 +107,7 @@ const state = (p) => p.evaluate(() => JSON.parse(localStorage.getItem("winglo-de
   await row.waitFor();
   assert.deepEqual(errors, []);
   console.log(
-    "PASS visual booking workflow: confirm, double-click guard, undo/stale undo, start, completion confirmation/cancel, persisted completion/revenue/history, conflict rejection, status filter, overview, mobile stepper and themes.",
+    "PASS visual booking workflow: confirm, double-click guard, undo/stale undo, start, completion confirmation/cancel, persisted completion/revenue/history, overlapping demo confirmation, status filter, overview, mobile stepper and themes.",
   );
   await b.close();
 })().catch((e) => {
