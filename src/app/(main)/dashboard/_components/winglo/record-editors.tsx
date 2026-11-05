@@ -29,10 +29,14 @@ export function QuoteEditor({
   initial,
   enquiry,
   onDone,
+  jobMode = false,
+  lockContext = false,
 }: {
   initial?: Quote;
   enquiry?: Enquiry;
   onDone: (id: string) => void;
+  jobMode?: boolean;
+  lockContext?: boolean;
 }) {
   const data = useDemoData();
   const saveQuote = useDemo((s) => s.saveQuote);
@@ -78,7 +82,7 @@ export function QuoteEditor({
           return;
         }
         try {
-          const savedId = saveQuote(quote);
+          const savedId = saveQuote(jobMode ? { ...quote, status: "Sent (Simulated)" } : quote);
           toast.success("Sample quotation saved");
           onDone(savedId);
         } catch (error) {
@@ -90,7 +94,7 @@ export function QuoteEditor({
         Sample estimates · No real quotation or message is sent. Prices are editable and are not Winglo-approved rates.
       </p>
       <FieldGroup>
-        {!initial && (
+        {!initial && !jobMode && !lockContext && (
           <Choice
             label="Prefill from enquiry"
             value={quote.enquiryId ?? ""}
@@ -107,28 +111,32 @@ export function QuoteEditor({
             }}
           />
         )}
-        <Choice
-          label="Customer"
-          value={quote.customerId}
-          options={data.customers}
-          onChange={(v) => setQuote({ ...quote, customerId: v, enquiryId: undefined })}
-        />
+        {!jobMode && !lockContext && (
+          <Choice
+            label="Customer"
+            value={quote.customerId}
+            options={data.customers}
+            onChange={(v) => setQuote({ ...quote, customerId: v, enquiryId: undefined })}
+          />
+        )}
         <p className="text-muted-foreground text-sm">
           {customer?.phone} · {customer?.location}
         </p>
-        <Choice
-          label="Service"
-          value={quote.serviceId}
-          options={data.settings.services}
-          onChange={(v) =>
-            setQuote({
-              ...quote,
-              serviceId: v,
-              enquiryId: undefined,
-              base: data.settings.services.find((s) => s.id === v)?.base ?? 0,
-            })
-          }
-        />
+        {!jobMode && !lockContext && (
+          <Choice
+            label="Service"
+            value={quote.serviceId}
+            options={data.settings.services}
+            onChange={(v) =>
+              setQuote({
+                ...quote,
+                serviceId: v,
+                enquiryId: undefined,
+                base: data.settings.services.find((s) => s.id === v)?.base ?? 0,
+              })
+            }
+          />
+        )}
         {e && (
           <p className="bg-muted rounded-lg p-3 text-sm">
             Collected details:{" "}
@@ -162,12 +170,14 @@ export function QuoteEditor({
             />
           ))}
         </div>
-        <Choice
-          label="Quote status"
-          value={quote.status}
-          options={quoteStatuses}
-          onChange={(v) => setQuote({ ...quote, status: v as Quote["status"] })}
-        />
+        {!jobMode && (
+          <Choice
+            label="Quote status"
+            value={quote.status}
+            options={quoteStatuses}
+            onChange={(v) => setQuote({ ...quote, status: v as Quote["status"] })}
+          />
+        )}
         <TextField
           label="Notes and add-on details"
           value={quote.notes}
@@ -178,7 +188,7 @@ export function QuoteEditor({
         <span className="text-muted-foreground">Estimated total</span>
         <strong className="text-2xl">{money(total(quote))}</strong>
       </div>
-      <Button type="submit">Save quotation</Button>
+      <Button type="submit">{jobMode ? "Review & Send Quote" : "Save quotation"}</Button>
     </form>
   );
 }
@@ -187,17 +197,23 @@ export function BookingEditor({
   quote,
   customerId,
   onDone,
+  jobMode = false,
+  lockContext = false,
 }: {
   initial?: Booking;
   quote?: Quote;
   customerId?: string;
   onDone: (id: string) => void;
+  jobMode?: boolean;
+  lockContext?: boolean;
 }) {
   const data = useDemoData();
   const book = useDemo((s) => s.book);
   const enquiry = data.enquiries.find((e) => e.id === quote?.enquiryId);
   const [value, setValue] = useState<Booking>(
-    initial ?? {
+    (initial
+      ? { ...initial, status: jobMode && initial.status === "Cancelled" ? "Confirmed" : initial.status }
+      : undefined) ?? {
       id: id("B"),
       customerId: quote?.customerId ?? customerId ?? data.customers[0]?.id ?? "",
       quoteId: quote?.id,
@@ -207,12 +223,15 @@ export function BookingEditor({
       staffId: data.settings.staff[0]?.id ?? "",
       notes: "",
       amount: quote ? total(quote) : data.settings.services[0].base,
-      status: enquiry?.scenarioId ? "Confirmed" : "Pending",
+      status: jobMode || enquiry?.scenarioId ? "Confirmed" : "Pending",
     },
   );
   const guided = isInteractiveBooking(value, data);
   const conflicts = guided ? [] : data.bookings.filter((b) => !isInteractiveBooking(b, data) && overlaps(value, b));
   const existing = quote && data.bookings.find((b) => b.quoteId === quote.id);
+  let submitLabel = "Save booking";
+  if (guided && value.status === "Confirmed") submitLabel = "Confirm Booking & Continue";
+  if (jobMode) submitLabel = initial ? "Save Booking Changes" : "Confirm Booking";
   return (
     <form
       className="flex flex-col gap-5"
@@ -239,7 +258,7 @@ export function BookingEditor({
         }
       }}
     >
-      {initial && (
+      {initial && !jobMode && (
         <>
           <BookingSummary booking={data.bookings.find((b) => b.id === initial.id) ?? initial} />
           <div className="flex flex-wrap items-center gap-3">
@@ -252,18 +271,22 @@ export function BookingEditor({
         </>
       )}
       <FieldGroup>
-        <Choice
-          label="Customer"
-          value={value.customerId}
-          options={data.customers}
-          onChange={(v) => setValue({ ...value, customerId: v, quoteId: undefined })}
-        />
-        <Choice
-          label="Cleaning service"
-          value={value.serviceId}
-          options={data.settings.services}
-          onChange={(v) => setValue({ ...value, serviceId: v, quoteId: undefined })}
-        />
+        {!jobMode && !lockContext && (
+          <Choice
+            label="Customer"
+            value={value.customerId}
+            options={data.customers}
+            onChange={(v) => setValue({ ...value, customerId: v, quoteId: undefined })}
+          />
+        )}
+        {!jobMode && !lockContext && (
+          <Choice
+            label="Cleaning service"
+            value={value.serviceId}
+            options={data.settings.services}
+            onChange={(v) => setValue({ ...value, serviceId: v, quoteId: undefined })}
+          />
+        )}
         <p className="text-muted-foreground text-sm">
           {data.customers.find((c) => c.id === value.customerId)?.phone} ·{" "}
           {data.customers.find((c) => c.id === value.customerId)?.location}
@@ -308,31 +331,33 @@ export function BookingEditor({
           onChange={(e) => setValue({ ...value, notes: e.target.value })}
         />
       </FieldGroup>
-      <fieldset className="flex flex-col gap-3 rounded-lg border p-3">
-        <legend className="px-1 text-sm font-medium">Booking status</legend>
-        <p className="text-muted-foreground text-xs">
-          Choose what happens next. Confirmed means the cleaning appointment is scheduled.
-        </p>
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          aria-label="Booking status"
-          value={value.status}
-          onValueChange={(status) => {
-            if (status) setValue({ ...value, status: status as Booking["status"] });
-          }}
-          className="flex flex-wrap gap-2"
-        >
-          {bookingStatuses.map((status) => (
-            <ToggleGroupItem key={status} value={status} className="min-h-11 flex-auto rounded-lg px-3">
-              {status}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-        <p role="status" className="text-primary text-xs">
-          Selected: {value.status}
-        </p>
-      </fieldset>
+      {!jobMode && (
+        <fieldset className="flex flex-col gap-3 rounded-lg border p-3">
+          <legend className="px-1 text-sm font-medium">Booking status</legend>
+          <p className="text-muted-foreground text-xs">
+            Choose what happens next. Confirmed means the cleaning appointment is scheduled.
+          </p>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            aria-label="Booking status"
+            value={value.status}
+            onValueChange={(status) => {
+              if (status) setValue({ ...value, status: status as Booking["status"] });
+            }}
+            className="flex flex-wrap gap-2"
+          >
+            {bookingStatuses.map((status) => (
+              <ToggleGroupItem key={status} value={status} className="min-h-11 flex-auto rounded-lg px-3">
+                {status}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+          <p role="status" className="text-primary text-xs">
+            Selected: {value.status}
+          </p>
+        </fieldset>
+      )}
       {conflicts.length > 0 && (
         <p role="alert" className="text-destructive text-sm">
           Cleaner conflict: {conflicts.length} overlapping job(s). Choose another cleaner or time.
@@ -342,7 +367,7 @@ export function BookingEditor({
         Simulation Only · Completed jobs count towards demo revenue and customer history.
       </p>
       <Button type="submit" disabled={!!existing && !initial}>
-        {guided && value.status === "Confirmed" ? "Confirm Booking & Continue" : "Save booking"}
+        {submitLabel}
       </Button>
     </form>
   );

@@ -12,9 +12,17 @@ Routine confirmation/start actions offer a short Undo window. Undo refuses to ov
 
 Overview retains its original KPI and chart sections while adding a compact next-actions panel and a live booking-status breakdown. Booking details combine saved customer, service, date/time, cleaner, amount, a responsive workflow stepper and recorded activity. Existing calendar views are retained with a status legend, pending-state styling and cleaner/duration tooltips. Shared primitives, fonts, themes and navigation remain unchanged.
 
-The demo now starts in light mode; choosing dark mode remains saved. Full animation is permanently enabled, including when a device or older saved preference requested reduced motion; there is no animation control. At phone widths the management tables adapt to enquiry, quotation, booking and customer cards with visible actions. Desktop tables remain available at larger widths, and the floating journey panel is height-limited on phones.
+The demo now starts in light mode; choosing dark mode remains saved. Full animation is permanently enabled, including when a device or older saved preference requested reduced motion; there is no animation control. At phone widths the management tables adapt to enquiry, quotation, booking and customer cards with visible actions. Desktop tables remain available at larger widths.
 
-On phones the interactive demo explains which role you are playing, brings each next question into view, and switches automatically from Customer View to Winglo Business when the answers are complete. The selected role survives refresh. Booking status is chosen with buttons at the bottom of the form; guided bookings default to Confirmed with a **Confirm Booking & Continue** action. Cleaner availability does not block scenario-linked presentation bookings, and those simulated appointments do not reserve availability for ordinary management bookings. Ordinary booking conflict validation remains in place.
+## Connected customer jobs
+
+The pre-change rollback point is `1eb0c73d226a2e2f409dc57714f2ffbd628a0cbb` on [`backup/pre-connected-jobs-2026-11-05`](https://github.com/kean346/winglodashboard/tree/backup/pre-connected-jobs-2026-11-05). Browser-local data is separate from this code backup.
+
+Each existing enquiry, quotation or booking opens the same linked workspace at `/dashboard/jobs/[id]`. A compact **Request → Quote → Booking → Complete** tracker derives from saved records. Customer, service and location remain visible; one primary action explains the next valid step. Editors stay inline, with secondary Edit, PDF, administrative corrections, cancellation and customer history under **More options**.
+
+The owner prepares and reviews the quote, then **Review & Send Quote** saves its simulated sent status. The separately labelled **Demo controls** area offers **Simulate Customer Acceptance**. Acceptance unlocks scheduling and **Confirm Booking**, followed by **Start Cleaning** and confirmed **Complete Job**. No real message is delivered. Existing pricing, conflict checks, completion confirmation, Undo and revenue rules remain in use. Scenario-linked bookings retain their cleaner-conflict exemption.
+
+Customer questions use the existing persistent conversation draft. Submission opens the saved job directly, without switching roles or navigating multiple directories. **View conversation** shows the saved answers for that specific request. The job view replaces the persistent floating workflow guide; optional product discovery remains under Help.
 
 ## Develop
 
@@ -27,14 +35,9 @@ npm run dev
 
 The application root redirects to `/dashboard/default`. The sidebar retains the six management sections — Overview, Enquiries, Quotations, Bookings, Customers and Settings — and adds Interactive Demo at `/dashboard/demo`. `/enquire` is a separate customer-facing demo form.
 
-Overview provides two entry points using the existing button styles:
+Overview offers **Try a Sample Job**, which starts or resumes the existing conversation, and **Explore Dashboard**, which opens the management sections without starting a sample. The sidebar also retains Interactive Demo. Once submitted, **Resume Customer Job** returns to the same saved records.
 
-- **Start Interactive Demo** opens `/dashboard/demo` and starts or resumes the guided customer journey.
-- **Explore Dashboard** keeps ordinary management tools available without starting guidance. An already-active tour is paused, with its progress retained.
-
-The demo has a customer messaging panel and live business preview, with Customer View / Business View tabs on mobile. The persistent progress panel survives route changes, refreshes, pausing and minimising. It routes to the correct linked enquiry, quotation, booking or customer; required actions gate progression. The journey ends with a reminder preview, completed job and linked-record summary. Messages are simulated locally.
-
-**Restart Demo / Restart conversation** starts a fresh isolated scenario without deleting any records. Repeated submission within a scenario creates just one enquiry; duplicate quote and booking conversion is guarded. **Reset Demo Data** remains the separate destructive action with confirmation.
+**Start Another Sample Job** creates an isolated scenario without deleting records. Repeated submission within a scenario reuses its enquiry. **Reset Demo Data** remains a separate destructive action with confirmation.
 
 ## Demo behaviour
 
@@ -49,7 +52,7 @@ The demo has a customer messaging panel and live business preview, with Customer
 
 ## Architecture
 
-Feature code lives in `src/app/(main)/dashboard/_components/winglo/`. `model.ts` owns domain types, seed data, question sets, pricing and overlap calculations. `store.ts` is the single persistence/mutation boundary. `journey.ts` owns conversation validation, eight stage gates, safe sample responses and activity derivation. The shared layout mounts `JourneyPanel`; only modal visibility and unsaved ordinary forms remain page-local. Forms, editors, overview, booking calendar and settings compose the existing shared primitives. Route pages remain small server components.
+Feature code lives in `src/app/(main)/dashboard/_components/winglo/`. `model.ts` owns domain types, seed data, question sets, pricing and overlap calculations. `store.ts` is the single persistence/mutation boundary. `journey.ts` owns conversation validation, eight stage gates, safe sample responses and activity derivation. `job-model.ts` resolves existing linked record IDs without adding a job dataset. `job-workspace.tsx` derives the next action from those saved records. The shared layout mounts only the optional product tour; editor visibility and unsaved forms remain page-local. Forms, editors, overview, booking calendar and settings compose the existing shared primitives. Route pages remain small server components.
 
 This demonstration intentionally remains browser-local. No database, authentication, credentials, messaging provider or paid integration is required. Sharing records between devices or delivering real messages is outside this demo’s scope.
 
@@ -76,7 +79,7 @@ BASE_URL=http://127.0.0.1:3000 PLAYWRIGHT_MODULE=/path/to/playwright node tests/
 
 The visual workflow suite (`tests/browser/winglo-visual-workflow.cjs`, run with the same Playwright variables) covers single-action confirmation, double-click protection, Undo/stale-Undo safety, starting work, completion confirmation/cancellation, persisted status/revenue/history, conflicts, filtering, mobile stepper width and theme screenshots. Visual review images use the `artifacts/winglo-visual-*` prefix.
 
-The workflow test covers both entry points, existing-data migration, all eight guided stages, route/refresh persistence, required-action gates, answer editing, all five service question sets, record linkage, duplicate guards, reminder previews, completed-job KPIs/history, pause/minimise/resume, isolated restart, reset, theme switching and mobile tabs/navigation/width. The actions test covers editable pricing/VAT/staff, quotation prefilling, printable output, week calendar view, cleaner conflicts and enquiry status filters. Updated demo images are `artifacts/winglo-interactive-desktop.png`, `artifacts/winglo-interactive-dark.png` and `artifacts/winglo-interactive-mobile.png`. Earlier overview images are retained.
+The connected workflow tests (`winglo-workflow.cjs` on desktop, `winglo-mobile-guided.cjs` on phones) cover request submission, review/send, simulated acceptance, scheduling, completion, exact linked IDs, duplicate submissions, refresh persistence, return from all three directories, customer history, revenue, PDF, corrections and rescheduling. Screenshots are `artifacts/winglo-connected-desktop.png` and `artifacts/winglo-connected-mobile.png`. The actions suite retains settings, pricing, ordinary-booking conflict and enquiry-status checks; the mobile suite checks routes, default light/saved dark and always-on motion. The product-tour and combined-guide suites verify independent tour navigation and business-data preservation.
 
 The inherited regional/motion browser scripts target the previous NOREVA screens and are historical verification artifacts, not Winglo acceptance tests. Existing repository-wide formatting issues in the world map JSON and regional data test are outside this feature.
 
@@ -86,10 +89,6 @@ The original MIT notice remains in [LICENSE](LICENSE), with a distribution copy 
 
 ## Optional product tour
 
-**Take Live Tour** opens an independent tour of the real dashboard. **Try the Interactive Demo** opens the existing live workflow. The tour stores only its own position/visibility in `winglo-product-tour`; Back, Skip and Restart never reset business records or guided-demo progress. An optional live-demo step explains the handoff and lets you return to the product tour afterward. Missing targets show a fallback action; phone layouts wrap the compact controls, and tour scrolling respects reduced-motion preferences. The tour is never started automatically for a fresh visitor.
+**Help · Product Tour** in the sidebar and page header opens product discovery. It stores its position and visibility separately in `winglo-product-tour`; Back, Skip and Restart never reset business records or the active sample. It never starts automatically for a new visitor. The optional live step opens the same working conversation and connected job workspace, with an explicit **Continue the tour** action afterward.
 
-Run `tests/browser/winglo-product-tour.cjs` with the same Playwright environment variables as the other browser suites.
-
-Fresh visitors see a prominent **Start with a live tour** welcome card. The left sidebar also provides **Take Live Tour**. After the tour is opened or the visitor chooses to explore, the large welcome prompt is dismissed locally. The tour stays above calendar content, whose stacking context is isolated so scheduling elements cannot hide Step 6 controls.
-
-On phones, the product tour and interactive demo share a single visible guide. Exploring shows the product-tour panel; live participation replaces it with the existing demo guide and a **Continue Product Tour** action. Returning restores the product tour at the next discovery stage. Both sets of saved progress and all business records remain independent; desktop presentation is unchanged.
+Only one tour panel is rendered; no floating demo guide competes with job controls. The panel stays above calendar content, wraps at phone widths, has keyboard-focusable controls and Escape dismissal, and respects reduced motion when scrolling. Missing targets show an explanation and an action to open the appropriate section.

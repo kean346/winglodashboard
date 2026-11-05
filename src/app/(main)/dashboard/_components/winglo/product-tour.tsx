@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
-import { useGuidePresentation } from "./guide-presentation";
 import { useDemo } from "./store";
 
 const steps = [
@@ -34,14 +33,14 @@ const steps = [
   {
     title: "Live interaction",
     route: "demo",
-    target: "#demo-views",
-    text: "Use the existing customer questions and business controls. Your answers and linked records stay saved. Return to this panel to continue the tour.",
+    target: "#demo-answer",
+    text: "Answer the customer questions, then submit the request to open its connected job workspace. Continue the tour whenever you’re ready.",
   },
   {
     title: "Quotations and scheduling",
     route: "quotations",
     target: '[data-motion-page] [data-slot="card"]',
-    text: "Review sample pricing, approve a quotation and simulate acceptance. Accepted quotes can become scheduled bookings.",
+    text: "Open a job to review and send its quote. Simulate customer acceptance in Demo controls, then schedule the cleaning.",
   },
   {
     title: "Your cleaning calendar",
@@ -143,19 +142,6 @@ export function ProductTour() {
     window.addEventListener("winglo:open-product-tour", open);
     return () => window.removeEventListener("winglo:open-product-tour", open);
   }, [router, tour.step]);
-  useEffect(() => {
-    useGuidePresentation.setState({ tourOpen: tour.open, participating: tour.participating && !!active });
-  }, [tour.open, tour.participating, active]);
-  useEffect(() => {
-    const resume = () => {
-      if (useDemo.getState().journey?.active) useDemo.getState().patchJourney({ minimized: true });
-      setTour({ step: 4, open: true, participating: false, seen: true });
-      router.push("/dashboard/quotations");
-    };
-    window.addEventListener("winglo:continue-product-tour", resume);
-    return () => window.removeEventListener("winglo:continue-product-tour", resume);
-  }, [router]);
-  useEffect(() => () => useGuidePresentation.setState({ tourOpen: false, participating: false }), []);
   function live() {
     useDemo.getState().startJourney();
     if (tour.open) setTour({ ...tour, step: 3, participating: true });
@@ -163,41 +149,13 @@ export function ProductTour() {
   }
   return (
     <>
-      {loaded && !tour.seen && !tour.open && pathname === "/dashboard/default" ? (
-        <section className="mx-4 my-4" aria-label="Welcome to Winglo">
-          <Card>
-            <CardContent className="flex flex-col items-start gap-4 py-8">
-              <p className="text-primary text-xs font-medium tracking-widest uppercase">Welcome to Winglo</p>
-              <h1 className="text-3xl tracking-tight">Start with a live tour.</h1>
-              <p className="text-muted-foreground max-w-lg text-sm">
-                We’ll show you how enquiries, quotations, cleaning bookings and customer records fit together. Follow
-                the highlights at your own pace.
-              </p>
-              <Button className="min-h-12 px-6" onClick={() => go(0)}>
-                Take Live Tour
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => setTour({ ...tour, seen: true })}>
-                Explore dashboard instead
-              </Button>
-            </CardContent>
-          </Card>
-        </section>
-      ) : (
-        <div className={cn("mx-4 flex flex-wrap gap-2 py-2", tour.open && "hidden sm:flex")}>
-          <Button size="sm" onClick={() => go(tour.step)}>
-            Take Live Tour
-          </Button>
-          <Button size="sm" variant="ghost" data-product-demo onClick={live}>
-            Try the Interactive Demo
-          </Button>
-        </div>
-      )}
+      <div className="mx-4 flex justify-end py-1">
+        <Button size="sm" variant="ghost" onClick={() => go(tour.step)}>
+          Help · Product Tour
+        </Button>
+      </div>
       {tour.open && (
-        <section
-          data-product-tour
-          aria-label="Product tour"
-          className={cn("sticky top-12 z-40 mx-4 mb-4", tour.participating && active && "hidden sm:block")}
-        >
+        <section data-product-tour aria-label="Product tour" className={cn("sticky top-12 z-40 mx-4 mb-4")}>
           <Card>
             <CardContent
               className="flex flex-col gap-3 pt-4"
@@ -211,7 +169,7 @@ export function ProductTour() {
               <h2 className="font-medium">{step.title}</h2>
               <p className="text-muted-foreground text-sm">
                 {tour.participating
-                  ? "You’re using the live interactive demo. Its own guide and records remain independent. Continue the product tour whenever you’re ready."
+                  ? "You’re using the live job workflow. Submit a request, then follow its next action. Your records stay saved when you continue the tour."
                   : step.text}
               </p>
               {tour.participating && enquiry && (

@@ -5,10 +5,10 @@ export function SupportCard() {
   return (
     <Card size="sm" className="group-data-[collapsible=icon]:hidden">
       <CardHeader>
-        <CardTitle className="text-sm">Start here. Take a live tour.</CardTitle>
+        <CardTitle className="text-sm">Need a quick introduction?</CardTitle>
         <CardDescription>Discover Winglo’s features with a short guided walkthrough.</CardDescription>
         <Button className="mt-2 w-full" onClick={() => window.dispatchEvent(new Event("winglo:open-product-tour"))}>
-          Take Live Tour
+          Help · Product Tour
         </Button>
       </CardHeader>
     </Card>

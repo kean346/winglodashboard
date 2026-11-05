@@ -16,7 +16,6 @@ import { DemoInfo } from "./_components/header/demo-info";
 import { LayoutControls } from "./_components/header/layout-controls";
 import { SearchDialog } from "./_components/header/search-dialog";
 import { ThemeSwitcher } from "./_components/header/theme-switcher";
-import { JourneyPanel } from "./_components/winglo/journey-panel";
 import { ProductTour } from "./_components/winglo/product-tour";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
@@ -77,7 +76,6 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         <div className="relative isolate z-0 min-h-0 min-w-0 flex-1 overflow-x-hidden p-4 has-data-[content-padding=false]:p-0 md:p-6 md:has-data-[content-padding=false]:p-0">
           <AnimatedPage>{children}</AnimatedPage>
         </div>
-        <JourneyPanel />
       </SidebarInset>
     </SidebarProvider>
   );

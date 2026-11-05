@@ -24,6 +24,7 @@ const base = process.env.BASE_URL || "http://127.0.0.1:3000";
   assert.equal(await dialog.getByLabel("Travel charge", { exact: true }).inputValue(), "125");
   assert.equal(await dialog.getByLabel("VAT (%) · 0 = no VAT", { exact: true }).inputValue(), "15");
   await dialog.getByRole("button", { name: "Save quotation", exact: true }).click();
+  await p.getByText("More options", { exact: true }).click();
   const popupPromise = p.waitForEvent("popup");
   await p.getByRole("button", { name: "Print / PDF", exact: true }).first().click();
   const popup = await popupPromise;
@@ -42,11 +43,13 @@ const base = process.env.BASE_URL || "http://127.0.0.1:3000";
   await dialog.getByRole("button", { name: /^(Save booking|Confirm Booking & Continue)$/, exact: true }).click();
   await dialog.waitFor({ state: "hidden" });
   await p.goto(`${base}/dashboard/enquiries`);
-  await p.getByRole("button", { name: "View / edit", exact: true }).first().click();
-  await dialog.getByLabel("Enquiry status", { exact: true }).selectOption("Closed");
-  await dialog.getByRole("button", { name: "Close", exact: true }).click();
+  await p.getByRole("button", { name: "Open Job", exact: true }).first().click();
+  await p.getByText("More options", { exact: true }).click();
+  await p.getByRole("button", { name: "Advanced request corrections", exact: true }).click();
+  await p.getByLabel("Enquiry status", { exact: true }).selectOption("Closed");
+  await p.goto(`${base}/dashboard/enquiries`);
   await p.getByLabel("Filter status", { exact: true }).selectOption("Closed");
-  assert.equal(await p.getByRole("button", { name: "View / edit", exact: true }).count(), 1);
+  assert.equal(await p.getByRole("button", { name: "Open Job", exact: true }).count(), 1);
   assert.deepEqual(errors, []);
   console.log(
     "PASS: persisted pricing/VAT/staff settings; estimate prefill; printable/PDF document; week view; cleaner conflict rejection and resolution; enquiry status/filter.",

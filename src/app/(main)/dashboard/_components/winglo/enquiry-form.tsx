@@ -16,10 +16,12 @@ import { useDemo, useDemoData } from "./store";
 export function EnquiryForm({
   initial,
   conversation = false,
+  lockService = false,
   onDone,
 }: {
   initial?: Enquiry;
   conversation?: boolean;
+  lockService?: boolean;
   onDone: (id: string) => void;
 }) {
   const data = useDemoData();
@@ -87,6 +89,12 @@ export function EnquiryForm({
     );
   }
   function renderField(q: (typeof all)[number]) {
+    if (q.key === "service" && lockService)
+      return (
+        <p className="text-sm">
+          Cleaning service: {data.settings.services.find((s) => s.id === service)?.name} · Linked to quotation
+        </p>
+      );
     if (q.key === "service")
       return (
         <Choice

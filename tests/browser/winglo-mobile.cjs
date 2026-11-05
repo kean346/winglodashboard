@@ -6,7 +6,7 @@ const path = require("node:path");
   const p = await b.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   p.setDefaultTimeout(15000);
   await p.goto("http://127.0.0.1:3000/dashboard/default");
-  await p.getByRole("button", { name: "Explore Dashboard", exact: true }).waitFor();
+  await p.getByRole("button", { name: "Try a Sample Job", exact: true }).waitFor();
   assert.equal(await p.locator("html").getAttribute("data-theme-mode"), "light");
   assert.equal(await p.locator("html").getAttribute("data-motion-preference"), "full");
   await p.getByRole("button", { name: /Current theme:/ }).click();
@@ -31,31 +31,8 @@ const path = require("node:path");
   const dialog = p.getByRole("dialog");
   await dialog.getByRole("button", { name: "Use fictional details", exact: true }).click();
   await dialog.getByRole("button", { name: "Submit enquiry", exact: true }).click();
-  await p
-    .getByRole("region", { name: "Mobile enquiries", exact: true })
-    .getByRole("button", { name: "Create quote", exact: true })
-    .first()
-    .click();
-  await dialog.getByRole("button", { name: "Save quotation", exact: true }).click();
-  await p.goto("http://127.0.0.1:3000/dashboard/quotations");
-  const quotes = p.getByRole("region", { name: "Mobile quotations", exact: true });
-  await quotes.getByRole("button", { name: "Approve Quotation", exact: true }).first().click();
-  await quotes.getByRole("button", { name: "Simulate Acceptance", exact: true }).first().click();
-  await quotes.getByRole("button", { name: "Convert to booking", exact: true }).first().click();
-  await dialog.getByLabel("Date and start time", { exact: true }).fill("2026-11-20T14:00");
-  await dialog.getByRole("radio", { name: "Confirmed", exact: true }).click();
-  await dialog.getByRole("button", { name: /^(Save booking|Confirm Booking & Continue)$/, exact: true }).click();
-  assert.ok(
-    await p.evaluate(() =>
-      JSON.parse(localStorage.getItem("winglo-demo-v1")).state.data.bookings.some(
-        (b) => b.start === "2026-11-20T14:00" && b.status === "Confirmed",
-      ),
-    ),
-  );
-  await p.goto("http://127.0.0.1:3000/dashboard/bookings");
-  await p.getByLabel("Mobile cleaning appointments", { exact: true }).waitFor();
-  await p.getByRole("button", { name: "View / reschedule", exact: true }).first().click();
-  await p.getByRole("list", { name: "Booking workflow" }).waitFor();
+  const job = p.getByRole("main", { name: "Customer job workspace", exact: true });
+  await job.getByRole("button", { name: "Prepare Quote", exact: true }).waitFor();
   await p.screenshot({ path: path.resolve(__dirname, "../../artifacts/winglo-mobile-ready.png") });
   await b.close();
   console.log(

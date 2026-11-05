@@ -45,3 +45,40 @@ test("fictional demo relations and service-specific question sets are coherent",
   const sets = Object.values(serviceQuestions).map((q) => q.map((v) => v.key).join(","));
   assert.equal(new Set(sets).size, 5);
 });
+
+test("job workspace resolves each existing linked record without another dataset", async () => {
+  const { resolveJob } = await import("../src/app/(main)/dashboard/_components/winglo/job-model.ts");
+  const d = seed();
+  const b = d.bookings.find((b) => b.quoteId);
+  const q = d.quotes.find((q) => q.id === b.quoteId);
+  for (const ref of [q.enquiryId, q.id, b.id]) {
+    const job = resolveJob(d, ref);
+    assert.equal(job.enquiry.id, q.enquiryId);
+    assert.equal(job.quote.id, q.id);
+    assert.equal(job.booking.id, b.id);
+    assert.equal(job.customer.id, q.customerId);
+  }
+  assert.equal(resolveJob(d, "missing").customer, undefined);
+});
+
+test("workspace progress follows saved state, including independent legacy bookings", async () => {
+  const { resolveJob } = await import("../src/app/(main)/dashboard/_components/winglo/job-model.ts");
+  const d = seed();
+  const enquiry = d.enquiries[0];
+  const clean = { ...d, quotes: [], bookings: [] };
+  assert.equal(resolveJob(clean, enquiry.id).stage, 0);
+  const quote = { ...d.quotes[0], enquiryId: enquiry.id };
+  clean.quotes = [quote];
+  assert.equal(resolveJob(clean, enquiry.id).stage, 1);
+  const booking = { ...d.bookings[0], quoteId: quote.id, status: "Confirmed" };
+  clean.bookings = [booking];
+  assert.equal(resolveJob(clean, enquiry.id).stage, 2);
+  clean.bookings = [{ ...booking, status: "Completed" }];
+  assert.equal(resolveJob(clean, enquiry.id).stage, 3);
+  const legacy = { ...booking, quoteId: undefined };
+  const job = resolveJob({ ...clean, bookings: [legacy] }, legacy.id);
+  assert.equal(job.enquiry, undefined);
+  assert.equal(job.quote, undefined);
+  assert.equal(job.customer.id, legacy.customerId);
+  assert.equal(job.stage, 2);
+});

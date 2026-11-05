@@ -54,12 +54,13 @@ const state = (p) => p.evaluate(() => JSON.parse(localStorage.getItem("winglo-de
     initial.bookings.filter((v) => v.status === "Completed").reduce((sum, v) => sum + v.amount, 0) + booking.amount,
   );
   await p.reload();
-  await row.getByRole("button", { name: "View / reschedule", exact: true }).click();
-  await modal.getByRole("list", { name: "Booking workflow", exact: true }).waitFor();
-  assert.equal(await modal.getByRole("button", { name: "Complete Job", exact: true }).count(), 0);
-  await modal.getByText("Cleaning started", { exact: true }).waitFor();
-  await modal.getByText("Cleaning job completed", { exact: true }).waitFor();
-  await modal.getByRole("button", { name: "Close", exact: true }).click();
+  await row.getByRole("button", { name: "Open Job", exact: true }).click();
+  const job = p.getByRole("main", { name: "Customer job workspace", exact: true });
+  await job.getByRole("button", { name: "View Customer History", exact: true }).waitFor();
+  assert.equal(await job.getByRole("button", { name: "Complete Job", exact: true }).count(), 0);
+  await job.getByText("Cleaning started", { exact: true }).waitFor();
+  await job.getByText("Cleaning job completed", { exact: true }).waitFor();
+  await p.goto(`${base}/dashboard/bookings`);
   // Existing conflicting records must still be rejected by the central booking mutation.
   const pending = saved.data.bookings.find((v) => v.status === "Pending");
   await p.evaluate((id) => {
@@ -94,14 +95,14 @@ const state = (p) => p.evaluate(() => JSON.parse(localStorage.getItem("winglo-de
   await p.waitForTimeout(500);
   await p.screenshot({ path: path.resolve(__dirname, "../../artifacts/winglo-visual-overview.png"), fullPage: false });
   await p.goto(`${base}/dashboard/bookings`);
-  await p.locator(`[id="${booking.id}"]`).getByRole("button", { name: "View / reschedule", exact: true }).click();
-  await modal.getByRole("list", { name: "Booking workflow", exact: true }).waitFor();
+  await p.locator(`[id="${booking.id}"]`).getByRole("button", { name: "Open Job", exact: true }).click();
+  await job.getByRole("button", { name: "View Customer History", exact: true }).waitFor();
   await p.screenshot({ path: path.resolve(__dirname, "../../artifacts/winglo-visual-booking.png") });
   await p.setViewportSize({ width: 390, height: 844 });
   await p.screenshot({ path: path.resolve(__dirname, "../../artifacts/winglo-visual-booking-mobile.png") });
   assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
-  assert.ok(await modal.evaluate((e) => e.scrollWidth <= e.clientWidth + 1));
-  await modal.getByRole("button", { name: "Close", exact: true }).click();
+  assert.ok(await job.evaluate((e) => e.scrollWidth <= e.clientWidth + 1));
+  await p.goto(`${base}/dashboard/bookings`);
   await p.getByRole("region", { name: "Mobile cleaning appointments", exact: true }).waitFor();
   await p.setViewportSize({ width: 1440, height: 1000 });
   await p.getByLabel("Filter status", { exact: true }).selectOption("Completed");

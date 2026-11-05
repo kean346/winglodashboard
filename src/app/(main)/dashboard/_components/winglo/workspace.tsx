@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DemoActivity } from "./activity";
 import { BookingCalendar } from "./booking-calendar";
 import { EnquiryForm } from "./enquiry-form";
+import { jobUrl } from "./job-model";
 import {
   type Booking,
   bookingStatuses,
@@ -113,25 +114,10 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
   const service = (sid: string) => d.settings.services.find((s) => s.id === sid)?.name ?? sid;
   const matches = (text: string, status?: string) =>
     text.toLowerCase().includes(query.toLowerCase()) && (filter === "All statuses" || status === filter);
-  const editEnquiry = (value?: Enquiry) => setEditor({ kind: "enquiry", value });
-  const editQuote = (value?: Quote) => setEditor({ kind: "quote", value });
-  const editBooking = (value?: Booking) => setEditor({ kind: "booking", value });
-  const createFrom = (enquiry: Enquiry) => {
-    const linked = d.quotes.find((q) => q.id === journey?.quoteId && q.enquiryId === enquiry.id);
-    setEditor({ kind: "quote", enquiry, value: linked });
-  };
-  const convert = (quote: Quote) => {
-    const existing = d.bookings.find((b) => b.quoteId === quote.id);
-    if (existing) {
-      editBooking(existing);
-      return;
-    }
-    setEditor({ kind: "booking", quote });
-  };
-  const setQuoteStatus = (q: Quote, status: Quote["status"]) => {
-    useDemo.getState().quoteStatus(q.id, status);
-    toast.success(`${status} · No messages sent`);
-  };
+  const editEnquiry = (value?: Enquiry) => (value ? router.push(jobUrl(value.id)) : setEditor({ kind: "enquiry" }));
+  const editQuote = (value?: Quote) => (value ? router.push(jobUrl(value.id)) : setEditor({ kind: "quote" }));
+  const editBooking = (value?: Booking) => (value ? router.push(jobUrl(value.id)) : setEditor({ kind: "booking" }));
+  const createFrom = (enquiry: Enquiry) => router.push(jobUrl(enquiry.id));
   const inRange = (b: Booking) =>
     appointmentRange === "All appointments" ||
     (appointmentRange === "Today"
@@ -196,7 +182,8 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
   }
   const doneEnquiry = (eid: string) => {
     setEditor(null);
-    setComplete(eid);
+    if (!publicForm) router.push(jobUrl(eid));
+    else setComplete(eid);
     toast.success("Thank you! Your enquiry is saved and ready for a sample quotation.");
   };
   if (publicForm)
@@ -269,7 +256,7 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
               }}
             >
               <Sparkles data-icon="inline-start" />
-              Start Interactive Demo
+              Try a Sample Job
             </Button>
             <Button
               variant="outline"
@@ -372,9 +359,8 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                       </p>
                       <div className="flex flex-wrap gap-2">
                         <Button variant="outline" onClick={() => editEnquiry(e)}>
-                          View / edit
+                          Open Job
                         </Button>
-                        <Button onClick={() => createFrom(e)}>Create quote</Button>
                       </div>
                     </div>
                   </Panel>
@@ -402,22 +388,11 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                       <p className="text-muted-foreground text-xs">{q.id} · Sample estimate</p>
                       <div className="flex flex-wrap gap-2">
                         <Button variant="outline" onClick={() => editQuote(q)}>
-                          View / edit
+                          Open Job
                         </Button>
                         <Button variant="outline" onClick={() => printQuote(q, d)}>
                           Print / PDF
                         </Button>
-                        {["Draft", "Awaiting Approval"].includes(q.status) && (
-                          <Button onClick={() => setQuoteStatus(q, "Sent (Simulated)")}>Approve Quotation</Button>
-                        )}
-                        {q.status === "Sent (Simulated)" && (
-                          <Button onClick={() => setQuoteStatus(q, "Accepted (Simulated)")}>Simulate Acceptance</Button>
-                        )}
-                        {q.status === "Accepted (Simulated)" && (
-                          <Button onClick={() => convert(q)}>
-                            {d.bookings.some((b) => b.quoteId === q.id) ? "View booking" : "Convert to booking"}
-                          </Button>
-                        )}
                       </div>
                     </div>
                   </Panel>
@@ -491,7 +466,7 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                       <div className="flex flex-wrap gap-2">
                         <NextActionButton booking={b} />
                         <Button size="sm" variant="outline" onClick={() => editBooking(b)}>
-                          View / reschedule
+                          Open Job
                         </Button>
                       </div>
                     </div>
@@ -548,10 +523,7 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                         <TableCell>
                           <div className="flex gap-2">
                             <Button size="sm" variant="outline" onClick={() => editEnquiry(e)}>
-                              View / edit
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={() => createFrom(e)}>
-                              Create quote
+                              Open Job
                             </Button>
                           </div>
                         </TableCell>
@@ -582,26 +554,11 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                         <TableCell>
                           <div className="flex flex-wrap gap-2">
                             <Button size="sm" variant="outline" onClick={() => editQuote(q)}>
-                              View / edit
+                              Open Job
                             </Button>
                             <Button size="sm" variant="ghost" onClick={() => printQuote(q, d)}>
                               Print / PDF
                             </Button>
-                            {["Draft", "Awaiting Approval"].includes(q.status) && (
-                              <Button size="sm" variant="ghost" onClick={() => setQuoteStatus(q, "Sent (Simulated)")}>
-                                Approve & simulate send
-                              </Button>
-                            )}
-                            {q.status === "Sent (Simulated)" && (
-                              <Button size="sm" onClick={() => setQuoteStatus(q, "Accepted (Simulated)")}>
-                                Simulate acceptance
-                              </Button>
-                            )}
-                            {q.status === "Accepted (Simulated)" && (
-                              <Button size="sm" onClick={() => convert(q)}>
-                                {d.bookings.some((b) => b.quoteId === q.id) ? "View booking" : "Convert to booking"}
-                              </Button>
-                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -633,7 +590,7 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                           <div className="flex flex-wrap items-center gap-2">
                             <NextActionButton booking={b} />
                             <Button size="sm" variant="outline" onClick={() => editBooking(b)}>
-                              View / reschedule
+                              Open Job
                             </Button>
                           </div>
                         </TableCell>
@@ -750,8 +707,9 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
             <QuoteEditor
               initial={editor.value}
               enquiry={editor.enquiry}
-              onDone={() => {
+              onDone={(recordId) => {
                 setEditor(null);
+                router.push(jobUrl(recordId));
               }}
             />
           )}
@@ -760,8 +718,9 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
               initial={editor.value}
               quote={editor.quote}
               customerId={editor.customerId}
-              onDone={() => {
+              onDone={(recordId) => {
                 setEditor(null);
+                router.push(jobUrl(recordId));
               }}
             />
           )}
