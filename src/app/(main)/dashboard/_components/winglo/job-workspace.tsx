@@ -12,8 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { EnquiryForm } from "./enquiry-form";
-import { resolveJob } from "./job-model";
+import { enquiryProgress, jobUrl, resolveJob } from "./job-model";
 import { enquiryStatuses, money, total } from "./model";
+import { PaymentPanel } from "./payment-panel";
 import { BookingEditor, printQuote, QuoteEditor } from "./record-editors";
 import { Choice, Panel, Status } from "./shared";
 import { hydrateDemo, useDemo } from "./store";
@@ -39,10 +40,12 @@ export function JobWorkspace({ recordId }: { recordId: string }) {
 
   if (!ready || !d) return <Skeleton className="h-80" />;
   const job = resolveJob(d, recordId);
-  const { enquiry: e, quote: q, booking: b, customer: c, service, stage } = job;
+  const { enquiry: e, quote: q, booking: b, customer: c, service } = job;
+  const progress = enquiryProgress(job);
+  const stage = progress.step;
   if (!c || (!e && !q && !b))
     return (
-      <Panel title="This job could not be found" description="Your saved records have not been changed.">
+      <Panel title="This enquiry could not be found" description="Your saved records have not been changed.">
         <Button asChild>
           <Link href="/dashboard/enquiries">Back to enquiries</Link>
         </Button>
@@ -51,44 +54,36 @@ export function JobWorkspace({ recordId }: { recordId: string }) {
   const sent = q?.status === "Sent (Simulated)";
   const accepted = q?.status === "Accepted (Simulated)";
   let instruction =
-    "This request is in your Inbox. Review the details, then choose Prepare Quote to move it into Jobs.";
+    "Review this enquiry, then prepare its quote. The customer, quotation, payment and booking stay connected here.";
   if (q)
     instruction =
-      "This request is now in Jobs. Review the draft price, then send the quotation. Its customer and conversation stay linked.";
+      "Review the draft price, then send the quotation. Stay in this enquiry to follow acceptance, payment and scheduling.";
   if (sent)
     instruction = "Waiting for the customer to accept your quotation. In this demo, simulate their response below.";
-  if (accepted && !b) instruction = "The customer accepted. Choose a date, time and cleaner to schedule the job.";
+  if (accepted && !b)
+    instruction =
+      "The customer accepted. Payment is tracked separately below. You can schedule cleaning now or return when the customer is ready.";
   if (b?.status === "Pending") instruction = "Review the saved appointment, then confirm this booking.";
   if (b?.status === "Confirmed") instruction = "This cleaning is scheduled. Start the job when the team begins.";
   if (b?.status === "In Progress") instruction = "Cleaning is underway. Complete the job once the work is finished.";
   if (b?.status === "Completed")
-    instruction = "This job is complete. Customer history and completed-job revenue are updated.";
+    instruction =
+      "Cleaning is complete. Payment is tracked separately below; completed-job revenue is not cash received.";
   if (b?.status === "Cancelled") instruction = "This booking is cancelled. You can reschedule it when ready.";
   if (e?.status === "Closed" && !q) instruction = "This request is closed. Reopen it before preparing a quotation.";
-  let status = e?.status ?? "Customer job";
-  if (q) status = "Ready to send";
-  if (sent) status = "Waiting for customer";
-  if (accepted) status = "Customer accepted";
-  if (b) status = b.status;
   const done = () => {
     setMode("summary");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-5 pb-8" aria-label="Customer job workspace">
-      <Button
-        variant="ghost"
-        className="self-start"
-        onClick={() => router.push(q || b ? "/dashboard/jobs" : "/dashboard/enquiries")}
-      >
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-5 pb-8" aria-label="Enquiry workspace">
+      <Button variant="ghost" className="self-start" onClick={() => router.push("/dashboard/enquiries")}>
         <ChevronLeft data-icon="inline-start" />
-        {q || b ? "All jobs" : "Back to Inbox"}
+        All enquiries
       </Button>
       <header className="flex flex-wrap items-start justify-between gap-4 border-b pb-5">
         <div>
-          <p className="text-primary text-xs tracking-widest uppercase">
-            {q || b ? "Winglo · Customer job" : "Inbox · Enquiry details"}
-          </p>
+          <p className="text-primary text-xs tracking-widest uppercase">Enquiries / Inbox · Customer request</p>
           <h1 className="mt-2 text-3xl tracking-tight">{c.name}</h1>
           <p className="mt-2 text-sm">{service?.name}</p>
           <p className="text-muted-foreground mt-1 flex items-center gap-2 text-sm">
@@ -96,10 +91,10 @@ export function JobWorkspace({ recordId }: { recordId: string }) {
             {c.location}
           </p>
         </div>
-        <Status>{status}</Status>
+        <Status>{progress.status}</Status>
       </header>
-      <ol className="grid grid-cols-4 gap-2" aria-label="Customer job progress">
-        {["Request", "Quote", "Booking", "Complete"].map((label, i) => (
+      <ol className="grid grid-cols-5 gap-2" aria-label="Enquiry progress">
+        {["Request", "Quote", "Accepted", "Booking", "Complete"].map((label, i) => (
           <li
             key={label}
             aria-current={stage === i ? "step" : undefined}
@@ -182,13 +177,14 @@ export function JobWorkspace({ recordId }: { recordId: string }) {
                 variant="outline"
                 onClick={() => {
                   useDemo.getState().quoteStatus(q.id, "Accepted (Simulated)");
-                  toast.success("Customer acceptance simulated. You can now schedule the cleaning.");
+                  toast.success("Acceptance recorded. Payment is now awaiting receipt; nothing has been marked paid.");
                 }}
               >
                 Simulate Customer Acceptance
               </Button>
             </Panel>
           )}
+          {q && <PaymentPanel key={q.id} quote={q} />}
           <div className="grid items-start gap-5 lg:grid-cols-2">
             <Panel title={e ? "Cleaning request" : "Customer details"} description={`${e?.id ?? c.id} · ${c.phone}`}>
               <dl className="grid grid-cols-2 gap-4 text-sm">
@@ -247,6 +243,51 @@ export function JobWorkspace({ recordId }: { recordId: string }) {
               </Panel>
             )}
           </div>
+          {e && q && (
+            <Panel
+              title="Linked quotations & bookings"
+              description="Open any saved quote or booking for this enquiry. Additional quotes stay linked to the same customer."
+            >
+              <div className="flex flex-col gap-3">
+                {d.quotes
+                  .filter((v) => v.enquiryId === e.id)
+                  .map((v) => (
+                    <Link
+                      key={v.id}
+                      className="flex flex-wrap justify-between gap-2 rounded-lg border p-3 text-sm"
+                      href={jobUrl(v.id)}
+                    >
+                      <span>
+                        {v.id} · {money(total(v))}
+                      </span>
+                      <Status>{v.status}</Status>
+                    </Link>
+                  ))}
+                {d.bookings
+                  .filter((v) => d.quotes.some((quote) => quote.enquiryId === e.id && quote.id === v.quoteId))
+                  .map((v) => (
+                    <Link
+                      key={v.id}
+                      className="flex flex-wrap justify-between gap-2 rounded-lg border p-3 text-sm"
+                      href={jobUrl(v.id)}
+                    >
+                      <span>{v.start.replace("T", " · ")}</span>
+                      <Status>{v.status}</Status>
+                    </Link>
+                  ))}
+                <Button
+                  variant="outline"
+                  className="self-start"
+                  onClick={() => {
+                    useDemo.getState().requestEditor({ kind: "quote", recordId: e.id, route: "/dashboard/quotations" });
+                    router.push("/dashboard/quotations");
+                  }}
+                >
+                  Create Additional Quote
+                </Button>
+              </div>
+            </Panel>
+          )}
           <details className="rounded-xl border p-4">
             <summary className="cursor-pointer text-sm font-medium">More options</summary>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -302,7 +343,7 @@ export function JobWorkspace({ recordId }: { recordId: string }) {
               </Button>
             </div>
           </details>
-          <Panel title="Job activity" description="Only actions actually recorded in this browser">
+          <Panel title="Enquiry activity" description="Only actions actually recorded in this browser">
             <ActivityTimeline events={activity.filter((a) => [e?.id, q?.id, b?.id].includes(a.recordId))} />
           </Panel>
         </>
@@ -406,7 +447,7 @@ export function JobWorkspace({ recordId }: { recordId: string }) {
                 <Link
                   key={v.id}
                   className="hover:bg-accent flex flex-wrap justify-between gap-2 rounded-lg border p-3 text-sm"
-                  href={`/dashboard/jobs/${v.id}`}
+                  href={jobUrl(v.id)}
                 >
                   <span>{v.start.replace("T", " · ")}</span>
                   <Status>{v.status}</Status>
@@ -419,7 +460,7 @@ export function JobWorkspace({ recordId }: { recordId: string }) {
             {d.quotes
               .filter((v) => v.customerId === c.id)
               .map((v) => (
-                <Link key={v.id} className="text-sm underline" href={`/dashboard/jobs/${v.id}`}>
+                <Link key={v.id} className="text-sm underline" href={jobUrl(v.id)}>
                   {v.id} · {money(total(v))} · {v.status}
                 </Link>
               ))}
@@ -429,7 +470,7 @@ export function JobWorkspace({ recordId }: { recordId: string }) {
       )}
       {mode !== "summary" && (
         <Button variant="outline" className="self-start" onClick={done}>
-          Back to job
+          Back to enquiry
         </Button>
       )}
       <footer className="text-muted-foreground border-t pt-4 text-xs">

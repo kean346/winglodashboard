@@ -9,45 +9,16 @@ const base = process.env.BASE_URL || "http://127.0.0.1:3000";
   const errors = [];
   p.on("pageerror", (e) => errors.push(e.message));
   const state = () => p.evaluate(() => JSON.parse(localStorage.getItem("winglo-demo-v1")).state);
-  await p.goto(`${base}/dashboard/jobs`);
-  const main = p.getByRole("main", { name: "Jobs workspace", exact: true });
-  await main.getByRole("heading", { name: "Jobs", exact: true }).waitFor();
+  await p.goto(`${base}/dashboard/enquiries`);
+  await p.getByRole("heading", { name: "Enquiries / Inbox", exact: true }).waitFor();
   const original = (await state()).data;
-  const expected =
-    original.bookings.length + original.quotes.filter((q) => !original.bookings.some((b) => b.quoteId === q.id)).length;
-  assert.equal(await p.locator(".winglo-record-card").count(), expected);
-  assert.ok(expected > 1);
-  await p.waitForTimeout(1800);
-  await p.screenshot({ path: path.resolve(__dirname, "../../artifacts/winglo-premium-jobs-desktop.png") });
-  const first = original.bookings[0];
-  await p.getByLabel("Search jobs", { exact: true }).fill(first.id);
-  assert.equal(await p.locator(".winglo-record-card").count(), 1);
-  await main.getByRole("link", { name: "Open Job", exact: true }).click();
-  await p.getByRole("main", { name: "Customer job workspace", exact: true }).waitFor();
-  await p.getByRole("button", { name: "All jobs", exact: true }).click();
-  await main.getByRole("heading", { name: "Jobs", exact: true }).waitFor();
-  await p.getByLabel("Job status", { exact: true }).selectOption("Completed");
-  assert.equal(
-    await p.locator(".winglo-record-card").count(),
-    original.bookings.filter((b) => b.status === "Completed").length,
-  );
-  await p.getByLabel("Search jobs", { exact: true }).fill("No matching customer");
-  await p.getByText("No matching records", { exact: true }).waitFor();
+  assert.equal(await p.locator(".winglo-record-card").count(), original.enquiries.length);
+  await p.waitForTimeout(1600);
+  await p.screenshot({ path: path.resolve(__dirname, "../../artifacts/winglo-unified-inbox-desktop.png") });
+  assert.equal(await p.getByRole("link", { name: "Jobs", exact: true }).count(), 0);
+  await p.getByLabel("Search enquiries", { exact: true }).fill("No matching customer");
+  await p.getByText("No matching records", { exact: true }).first().waitFor();
   await p.reload();
-  assert.deepEqual((await state()).data, original);
-  const sameCustomerJob = original.bookings.find((b) => b.id !== first.id && b.customerId === first.customerId);
-  assert.ok(sameCustomerJob);
-  for (const record of [first, sameCustomerJob]) {
-    await p.goto(`${base}/dashboard/jobs`);
-    await p.getByLabel("Search jobs", { exact: true }).fill(record.id);
-    await p.getByRole("link", { name: "Open Job", exact: true }).click();
-    await p.getByRole("main", { name: "Customer job workspace", exact: true }).waitFor();
-    assert.ok(p.url().endsWith(record.id));
-    await p.reload();
-    await p
-      .getByRole("heading", { name: original.customers.find((c) => c.id === record.customerId).name, exact: true })
-      .waitFor();
-  }
   assert.deepEqual((await state()).data, original);
   for (const [route, label] of [
     ["enquiries", "Mobile enquiries"],
@@ -115,17 +86,17 @@ const base = process.env.BASE_URL || "http://127.0.0.1:3000";
   assert.ok(await p.locator("html").evaluate((e) => e.classList.contains("dark")));
   await p.waitForTimeout(1800);
   await p.screenshot({ path: path.resolve(__dirname, "../../artifacts/winglo-premium-demo-dark.png") });
-  for (const route of ["jobs", "enquiries", "quotations", "customers"]) {
+  for (const route of ["enquiries", "quotations", "customers"]) {
     await p.goto(`${base}/dashboard/${route}`);
     await p.locator(".winglo-record-card").first().waitFor();
     assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), route);
     await p.waitForTimeout(1800);
-    await p.screenshot({ path: path.resolve(__dirname, `../../artifacts/winglo-premium-${route}-mobile-dark.png`) });
+    await p.screenshot({ path: path.resolve(__dirname, `../../artifacts/winglo-unified-${route}-mobile-dark.png`) });
   }
   assert.deepEqual((await state()).data, original);
   assert.deepEqual(errors, []);
   console.log(
-    "PASS premium UI: Jobs grouping/filter/search/navigation, cards/table access, grey selection/checkmark, count typing/stepper/bounds, refresh, mobile/dark, preserved data.",
+    "PASS premium UI: unified Inbox progress/search/navigation, cards/table access, grey selection/checkmark, count typing/stepper/bounds, refresh, mobile/dark, preserved data.",
   );
   await browser.close();
 })().catch((e) => {

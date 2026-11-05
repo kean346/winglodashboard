@@ -85,15 +85,15 @@ export function InteractiveDemo() {
         <p className="text-primary text-xs tracking-widest uppercase">Winglo · Sample customer request</p>
         <h1 className="mt-2 text-3xl tracking-tight">Tell us about your clean.</h1>
         <p className="text-muted-foreground mt-2 text-sm">
-          Answer as the customer. When you submit, it arrives in Enquiries / Inbox. Review it there, then prepare a
-          quote to move it into Jobs.
+          Answer as the customer. When you submit, it arrives in Enquiries / Inbox. Open it there to prepare a quote and
+          follow acceptance, payment and booking.
         </p>
       </header>
       <p className="text-muted-foreground text-xs">Simulated WhatsApp enquiry · No real messages sent</p>
       {enquiry && (
         <Panel
           title="This request is already saved"
-          description={`${enquiry.id} · ${data.quotes.some((q) => q.enquiryId === enquiry.id) ? "Quote prepared. Continue in Jobs." : "Waiting in Enquiries / Inbox. Prepare its quote to start the job."}`}
+          description={`${enquiry.id} · ${data.quotes.some((q) => q.enquiryId === enquiry.id) ? "Quote prepared. Continue in the same enquiry." : "Waiting in Enquiries / Inbox. Open it to prepare its quote."}`}
         >
           <Button
             onClick={() =>
@@ -102,7 +102,7 @@ export function InteractiveDemo() {
               )
             }
           >
-            {data.quotes.some((q) => q.enquiryId === enquiry.id) ? "Resume Customer Job" : "Open Inbox"}
+            {data.quotes.some((q) => q.enquiryId === enquiry.id) ? "Resume Enquiry" : "Open Inbox"}
           </Button>
         </Panel>
       )}
@@ -225,8 +225,8 @@ export function InteractiveDemo() {
               {complete && (
                 <div className="flex flex-col gap-3 border-t pt-4">
                   <p className="text-primary text-sm">
-                    Customer details complete. Send this simulated enquiry to the Inbox, then choose Prepare Quote to
-                    move it into Jobs.
+                    Customer details complete. Send this simulated enquiry to the Inbox, then continue in the same
+                    enquiry to prepare its quote.
                   </p>
                   <Button className="min-h-12" onClick={submit}>
                     Send Enquiry to Inbox
@@ -261,7 +261,9 @@ export function InteractiveDemo() {
       <Button variant="outline" className="self-start" onClick={() => store.startJourney(true)}>
         Start Another Sample Job
       </Button>
-      <p className="text-muted-foreground text-xs">Starting another sample keeps all previously saved customer jobs.</p>
+      <p className="text-muted-foreground text-xs">
+        Starting another sample keeps all previously saved enquiries and customer records.
+      </p>
     </main>
   );
 }

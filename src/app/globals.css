@@ -588,12 +588,14 @@ html.dark[data-theme-preset="default"] {
   --winglo-selection-text: var(--color-zinc-950);
   --winglo-control-border: var(--color-zinc-400);
   --winglo-success: var(--color-emerald-700);
+  --winglo-waiting: var(--color-amber-700);
 }
 html.dark {
   --winglo-selection: var(--color-zinc-700);
   --winglo-selection-text: var(--color-zinc-50);
   --winglo-control-border: var(--color-zinc-500);
   --winglo-success: var(--color-emerald-300);
+  --winglo-waiting: var(--color-amber-300);
 }
 .winglo-record-card {
   border: 1px solid var(--border);
@@ -667,9 +669,18 @@ html.dark {
   font-weight: 600;
 }
 .winglo-status[data-status="Completed"],
-.winglo-status[data-status="Accepted (Simulated)"] {
+.winglo-status[data-status="Accepted (Simulated)"],
+.winglo-status[data-status="Paid"],
+.winglo-status[data-status="No payment due"] {
   color: var(--winglo-success);
   background: color-mix(in srgb, var(--winglo-success) 10%, var(--background));
+}
+.winglo-status[data-status="Awaiting payment"],
+.winglo-status[data-status="Payment not recorded"],
+.winglo-status[data-status="Part paid"],
+.winglo-status[data-status="Waiting for acceptance"] {
+  color: var(--winglo-waiting);
+  background: color-mix(in srgb, var(--winglo-waiting) 10%, var(--background));
 }
 @media (prefers-reduced-motion: reduce) {
   .winglo-record-card,

@@ -31,7 +31,7 @@ const path = require("node:path");
   const dialog = p.getByRole("dialog");
   await dialog.getByRole("button", { name: "Use fictional details", exact: true }).click();
   await dialog.getByRole("button", { name: "Submit enquiry", exact: true }).click();
-  const job = p.getByRole("main", { name: "Customer job workspace", exact: true });
+  const job = p.getByRole("main", { name: "Enquiry workspace", exact: true });
   await job.getByRole("button", { name: "Prepare Quote", exact: true }).waitFor();
   await p.screenshot({ path: path.resolve(__dirname, "../../artifacts/winglo-mobile-ready.png") });
   await b.close();

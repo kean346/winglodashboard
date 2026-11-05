@@ -1,6 +1,7 @@
 import {
   estimate,
   overlaps,
+  paymentSummary,
   seed,
   serviceQuestions,
   total,
@@ -111,7 +112,7 @@ test("Jobs lists each linked branch once and preserves multiple jobs for one cus
   assert.equal(jobs.find((j) => j.ref === "legacy-booking").enquiry, undefined);
 });
 
-test("Inbox attention queue excludes quoted and closed requests without deleting conversations", async () => {
+test("Unified Inbox retains quoted enquiries and supports an explicit closed archive", async () => {
   const { inboxEnquiries, listJobs } = await import("../src/app/(main)/dashboard/_components/winglo/job-model.ts");
   const data = seed();
   const request = { ...data.enquiries[0], id: "new-request", status: "Ready for Quote" };
@@ -126,8 +127,49 @@ test("Inbox attention queue excludes quoted and closed requests without deleting
     serviceId: request.serviceId,
     status: "Draft",
   });
-  assert.ok(!inboxEnquiries(data).some((e) => e.id === request.id));
+  assert.ok(inboxEnquiries(data).some((e) => e.id === request.id));
   assert.ok(listJobs(data).some((j) => j.ref === "prepared-draft"));
-  assert.ok(!inboxEnquiries(data).some((e) => e.id === "closed-request"));
+  assert.ok(!inboxEnquiries(data, false).some((e) => e.id === "closed-request"));
   assert.equal(inboxEnquiries(data, true).length, data.enquiries.length);
+});
+
+test("payment is independent from acceptance, booking and completed-job revenue", () => {
+  const quote = {
+    ...seed().quotes[0],
+    base: 1000,
+    size: 0,
+    extras: 0,
+    travel: 0,
+    discount: 0,
+    vat: 0,
+    status: "Accepted (Simulated)",
+  };
+  assert.equal(paymentSummary(quote).status, "Payment not recorded", "Legacy acceptance invents no payment history");
+  assert.equal(paymentSummary({ ...quote, payment: { amountReceived: 0 } }).status, "Awaiting payment");
+  assert.deepEqual(paymentSummary({ ...quote, payment: { amountReceived: 250 } }), {
+    status: "Part paid",
+    amount: 1000,
+    received: 250,
+    balance: 750,
+  });
+  assert.equal(paymentSummary({ ...quote, payment: { amountReceived: 1000 } }).status, "Paid");
+  assert.equal(paymentSummary({ ...quote, status: "Sent (Simulated)" }).status, "Not requested");
+  assert.equal(
+    total({ ...quote, payment: { amountReceived: 250 } }),
+    1000,
+    "Payment does not change the quoted or job value",
+  );
+});
+
+test("an enquiry surfaces unfinished work while all linked branches remain accessible", async () => {
+  const { resolveJob } = await import("../src/app/(main)/dashboard/_components/winglo/job-model.ts");
+  const d = seed(),
+    e = d.enquiries[0];
+  const q = { ...d.quotes[0], enquiryId: e.id };
+  const b = { ...d.bookings[0], quoteId: q.id, status: "Completed" };
+  const extra = { ...q, id: "additional-draft", status: "Draft" };
+  const data = { ...d, enquiries: [e], quotes: [q, extra], bookings: [b] };
+  assert.equal(resolveJob(data, e.id).quote.id, extra.id);
+  assert.equal(resolveJob(data, b.id).booking.id, b.id);
+  assert.equal(resolveJob({ ...data, bookings: [{ ...b, status: "Confirmed" }] }, e.id).quote.id, q.id);
 });

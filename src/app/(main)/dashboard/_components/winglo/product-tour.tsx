@@ -34,25 +34,25 @@ const steps = [
     title: "Live interaction",
     route: "demo",
     target: "#demo-answer",
-    text: "Simulate a WhatsApp enquiry using the customer questions. Send it to the Inbox, then choose Prepare Quote to carry it into Jobs. No real WhatsApp messages are received or sent.",
+    text: "Simulate a WhatsApp enquiry, then open it in the Inbox. Prepare its quote and continue through acceptance, payment and booking in the same enquiry. No real messages are sent.",
   },
   {
     title: "Enquiries / Inbox: respond to requests",
     route: "enquiries",
     target: "#inbox-handoff",
-    text: "Review incoming requests and collect missing details. Prepare Quote creates a linked draft in Jobs automatically. All enquiries keeps handled conversations available.",
+    text: "Every request stays here through quoting, acceptance, payment, booking and completion. Open Enquiry keeps its customer and records together. Progress badges show what is happening and what to do next.",
   },
   {
-    title: "Jobs: manage the cleaning work",
-    route: "jobs",
-    target: '[aria-label="Customer jobs"] .winglo-record-card',
-    text: "Manage quotes, customer acceptance, bookings and completion here. Open any job to continue. One customer can have several jobs; unquoted requests stay in the Inbox.",
+    title: "Acceptance and payment are separate",
+    route: "enquiries",
+    target: '[aria-label="Mobile enquiries"] .winglo-record-card',
+    text: "An accepted quote can wait for payment for days. Awaiting payment, Part paid and Paid are tracked separately from cleaning. Records stay saved until you update them; acceptance and completion never imply payment.",
   },
   {
     title: "Quotations and scheduling",
     route: "quotations",
     target: '[data-motion-page] [data-slot="card"]',
-    text: "Open a job to review and send its quote. Simulate customer acceptance in Demo controls, then schedule the cleaning.",
+    text: "View quotations by status, including accepted quotes, or create an additional linked quote. Open Enquiry returns to the same customer workflow.",
   },
   {
     title: "Your cleaning calendar",
@@ -80,7 +80,7 @@ const steps = [
   },
 ];
 type Tour = { version?: number; step: number; open: boolean; participating: boolean; seen?: boolean };
-const initial: Tour = { version: 2, step: 0, open: false, participating: false };
+const initial: Tour = { version: 3, step: 0, open: false, participating: false };
 export function ProductTour() {
   const [tour, setTour] = useState<Tour>(initial);
   const [loaded, setLoaded] = useState(false);
@@ -97,8 +97,9 @@ export function ProductTour() {
         setTour({
           ...initial,
           ...saved,
-          version: 2,
-          step: saved.version === 2 ? saved.step : ([0, 1, 2, 3, 6, 7, 8, 9, 10][saved.step] ?? 0),
+          version: 3,
+          step:
+            saved.version === 2 || saved.version === 3 ? saved.step : ([0, 1, 2, 3, 6, 7, 8, 9, 10][saved.step] ?? 0),
         });
     } catch {
       /* A missing or unreadable tour preference leaves the tour optional. */
@@ -148,7 +149,7 @@ export function ProductTour() {
   }, [tour.open, tour.participating, pathname, step]);
   function go(index: number) {
     if (useDemo.getState().journey?.active) useDemo.getState().patchJourney({ minimized: true });
-    setTour({ version: 2, step: index, open: true, participating: false, seen: true });
+    setTour({ version: 3, step: index, open: true, participating: false, seen: true });
     router.push(`/dashboard/${steps[index].route}`);
   }
   useEffect(() => {
@@ -187,14 +188,14 @@ export function ProductTour() {
               <h2 className="font-medium">{step.title}</h2>
               <p className="text-muted-foreground text-sm">
                 {tour.participating
-                  ? "Simulate a WhatsApp request → Send Enquiry to Inbox → Prepare Quote → continue in Jobs. No real messages are sent. Your records stay saved when you continue the tour."
+                  ? "Send the sample to Inbox → Open Enquiry → prepare its quote. Continue in the same enquiry for acceptance, payment and booking. No real messages or payments are processed."
                   : step.text}
               </p>
               {tour.participating && enquiry && (
                 <p role="status" className="text-primary text-sm">
                   {quote
-                    ? `Quote ${quote.id} is prepared. This request is now in Jobs, with its customer and conversation linked.`
-                    : `Enquiry ${enquiry.id} is in your Inbox. Choose Prepare Quote to carry it into Jobs.`}
+                    ? `Quote ${quote.id} is linked to this enquiry. Continue here for acceptance, payment and booking.`
+                    : `Enquiry ${enquiry.id} stays in your Inbox. Open it to prepare its quote and track every next step.`}
                 </p>
               )}
               <Progress value={((tour.step + 1) / steps.length) * 100} />

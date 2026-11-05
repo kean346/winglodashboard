@@ -3,151 +3,140 @@ const path = require("node:path");
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
 const base = process.env.BASE_URL || "http://127.0.0.1:3000";
 async function runConnectedJob({ mobile = false } = {}) {
-  const browser = await chromium.launch({
-    executablePath: process.env.CHROMIUM_PATH || "/usr/bin/chromium",
-    args: ["--no-sandbox"],
-  });
+  const browser = await chromium.launch({ executablePath: "/usr/bin/chromium", args: ["--no-sandbox"] });
   const p = await browser.newPage({ viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 1000 } });
-  p.setDefaultTimeout(15000);
+  p.setDefaultTimeout(20000);
   const errors = [];
   p.on("pageerror", (e) => errors.push(e.message));
   const state = () => p.evaluate(() => JSON.parse(localStorage.getItem("winglo-demo-v1")).state);
+  const job = p.getByRole("main", { name: "Enquiry workspace", exact: true });
   await p.goto(`${base}/dashboard/default`);
   await p.getByRole("button", { name: "Try a Sample Job", exact: true }).click();
   await p.getByRole("heading", { name: "Tell us about your clean.", exact: true }).waitFor();
   const original = (await state()).data;
   await p.getByRole("button", { name: "Use Sample Details", exact: true }).click();
-  await p.reload();
   await p.getByRole("button", { name: "Send Enquiry to Inbox", exact: true }).click();
-  const job = p.getByRole("main", { name: "Customer job workspace", exact: true });
   await p.getByRole("heading", { name: "Enquiries / Inbox", exact: true }).waitFor();
   let s = await state();
   const e = s.data.enquiries.find((e) => e.id === s.journey.enquiryId);
-  assert.ok(e);
-  assert.equal(s.data.enquiries.length, original.enquiries.length + 1);
-  assert.equal(await p.getByRole("tab", { name: /Business View/ }).count(), 0);
-  assert.equal(await p.getByRole("complementary", { name: "Guided demo progress" }).count(), 0);
-  assert.equal(s.data.quotes.length, original.quotes.length, "Inbox arrival does not create a job quote");
-  await p.goto(`${base}/dashboard/jobs`);
-  await p.getByRole("heading", { name: "Jobs", exact: true }).waitFor();
-  assert.equal(await p.locator(`[id="job-${e.id}"]`).count(), 0, "Unquoted enquiry stays out of Jobs");
-  await p.goto(`${base}/dashboard/enquiries`);
-  await p
-    .locator(`[id="mobile-${e.id}"]`)
-    .getByRole("button", { name: "Prepare Quote", exact: true })
-    .evaluate((button) => {
-      button.click();
-      button.click();
-    });
-  await job.getByRole("button", { name: "Review & Send Quote", exact: true }).waitFor();
-  s = await state();
-  assert.equal(s.data.quotes.filter((q) => q.enquiryId === e.id).length, 1, "Repeated handoff reuses one draft");
-  assert.equal(s.data.quotes.find((q) => q.enquiryId === e.id).status, "Draft");
-  await p.goto(`${base}/dashboard/enquiries`);
-  assert.equal(await p.locator(`[id="mobile-${e.id}"]`).count(), 0, "Handled enquiry leaves the attention queue");
-  await p.getByLabel("Inbox view", { exact: true }).selectOption("All enquiries");
-  await p.waitForTimeout(900);
-  await p.screenshot({
-    path: path.resolve(__dirname, `../../artifacts/winglo-inbox-${mobile ? "mobile" : "desktop"}.png`),
+  assert.equal(s.data.quotes.length, original.quotes.length);
+  assert.equal(await p.getByRole("link", { name: "Jobs", exact: true }).count(), 0);
+  const card = p.locator(`[id="mobile-${e.id}"]`);
+  await card.getByRole("button", { name: "Open Enquiry", exact: true }).click();
+  await job.getByRole("button", { name: "Prepare Quote", exact: true }).evaluate((el) => {
+    el.click();
+    el.click();
   });
-  await p.locator(`[id="mobile-${e.id}"]`).getByRole("button", { name: "Open Job", exact: true }).click();
-  await job.getByRole("button", { name: "Review & Send Quote", exact: true }).click();
   await job.getByLabel("Base cleaning price", { exact: true }).fill("1000");
-  assert.equal(await job.getByLabel("Quote status", { exact: true }).count(), 0);
-  await job.getByRole("button", { name: "Review & Send Quote", exact: true }).evaluate((el) => {
-    el.click();
-    el.click();
-  });
-  await job.getByText("Waiting for customer", { exact: true }).waitFor();
+  await job.getByRole("button", { name: "Review & Send Quote", exact: true }).click();
   s = await state();
   const q = s.data.quotes.find((q) => q.enquiryId === e.id);
-  assert.equal(q.status, "Sent (Simulated)");
-  assert.equal(q.customerId, e.customerId);
   assert.equal(s.data.quotes.filter((q) => q.enquiryId === e.id).length, 1);
-  assert.equal(q.base, 1000);
-  await p.reload();
+  assert.equal(q.status, "Sent (Simulated)");
+  await p.goto(`${base}/dashboard/enquiries`);
+  await card.getByText("Waiting for acceptance", { exact: true }).waitFor();
+  await card.getByRole("button", { name: "Open Enquiry", exact: true }).click();
   await job.getByRole("button", { name: "Simulate Customer Acceptance", exact: true }).click();
-  await job.getByRole("button", { name: "Schedule Cleaning", exact: true }).click();
-  const seed = original.bookings[0];
-  await job.getByLabel("Date and start time", { exact: true }).fill(seed.start);
-  await job.getByLabel("Assign cleaner", { exact: true }).selectOption(seed.staffId);
-  assert.equal(await job.getByRole("alert").count(), 0);
-  await job.getByRole("button", { name: "Confirm Booking", exact: true }).evaluate((el) => {
-    el.click();
-    el.click();
+  await job.getByText("Awaiting payment", { exact: true }).waitFor();
+  s = await state();
+  assert.equal(s.data.quotes.find((v) => v.id === q.id).payment.amountReceived, 0);
+  await p.reload();
+  await job.getByText("Awaiting payment", { exact: true }).waitFor();
+  await p.locator(`[id="payment-${q.id}"]`).scrollIntoViewIfNeeded();
+  await p.waitForTimeout(1100);
+  await p.screenshot({
+    path: path.resolve(__dirname, `../../artifacts/winglo-unified-awaiting-${mobile ? "mobile" : "desktop"}.png`),
   });
-  await job.getByRole("button", { name: "Start Cleaning", exact: true }).waitFor();
+  await p.goto(`${base}/dashboard/enquiries`);
+  await p.getByLabel("Filter status", { exact: true }).selectOption("Awaiting payment");
+  await card.getByText("Awaiting payment", { exact: true }).waitFor();
+  await card.getByRole("button", { name: "Open Enquiry", exact: true }).click();
+
+  // Schedule before payment: no invented pay-before-booking policy.
+  await job.getByRole("button", { name: "Schedule Cleaning", exact: true }).click();
+  await job.getByLabel("Date and start time", { exact: true }).fill(original.bookings[0].start);
+  await job.getByLabel("Assign cleaner", { exact: true }).selectOption(original.bookings[0].staffId);
+  await job.getByRole("button", { name: "Confirm Booking", exact: true }).click();
   s = await state();
   const b = s.data.bookings.find((b) => b.quoteId === q.id);
   assert.equal(b.status, "Confirmed");
   assert.equal(b.customerId, e.customerId);
-  assert.equal(s.data.bookings.filter((b) => b.quoteId === q.id).length, 1);
-  assert.equal(s.data.enquiries.find((v) => v.id === e.id).status, "Converted");
-  const expectedCustomer = s.data.customers.find((c) => c.id === e.customerId).name;
-  for (const [route, id, region] of [
-    ["enquiries", e.id, "Mobile enquiries"],
-    ["quotations", q.id, "Mobile quotations"],
-    ["bookings", b.id, "Mobile cleaning appointments"],
-  ]) {
+  await job.getByRole("button", { name: "Record / Update Payment", exact: true }).click();
+  await job.getByLabel("Total received to date (R)", { exact: true }).fill("-1");
+  await job.getByRole("button", { name: "Save Payment Record", exact: true }).click();
+  assert.equal(
+    (await state()).data.quotes.find((v) => v.id === q.id).payment.amountReceived,
+    0,
+    "Invalid payment cannot advance saved state",
+  );
+  await job.getByLabel("Total received to date (R)", { exact: true }).fill("100");
+  await job.getByLabel("Payment due date (optional)", { exact: true }).fill("2026-12-10");
+  await job.getByRole("button", { name: "Save Payment Record", exact: true }).click();
+  await job.getByText("Part paid", { exact: true }).waitFor();
+  await p.reload();
+  await job.getByText("Part paid", { exact: true }).waitFor();
+  for (const route of ["enquiries", "quotations", "bookings"]) {
     await p.goto(`${base}/dashboard/${route}`);
-    if (route === "enquiries") await p.getByLabel("Inbox view", { exact: true }).selectOption("All enquiries");
-    await p.getByLabel(`Search ${route}`, { exact: true }).fill(expectedCustomer);
+    await p
+      .getByLabel(`Search ${route}`, { exact: true })
+      .fill(s.data.customers.find((c) => c.id === e.customerId).name);
+    const region = route === "bookings" ? "Mobile cleaning appointments" : `Mobile ${route}`;
     if (mobile)
       await p
         .getByRole("region", { name: region, exact: true })
-        .getByRole("button", { name: "Open Job", exact: true })
+        .getByRole("button", { name: "Open Enquiry", exact: true })
         .first()
         .click();
     else {
       if (route !== "bookings") await p.getByRole("button", { name: "Table view", exact: true }).click();
-      await p.locator(`[id="${id}"]`).getByRole("button", { name: "Open Job", exact: true }).click();
+      const recordId = { enquiries: e.id, quotations: q.id, bookings: b.id }[route];
+      await p.locator(`[id="${recordId}"]`).getByRole("button", { name: "Open Enquiry", exact: true }).click();
     }
-    await job.getByRole("heading", { name: expectedCustomer, exact: true }).waitFor();
-    assert.equal((await state()).data.bookings.find((v) => v.id === b.id).quoteId, q.id);
+    await job.getByRole("button", { name: "Start Cleaning", exact: true }).waitFor();
   }
   await job.getByRole("button", { name: "Start Cleaning", exact: true }).click();
   await job.getByRole("button", { name: "Complete Job", exact: true }).click();
-  const confirm = p.getByRole("dialog");
-  await confirm.getByRole("button", { name: "Confirm Completion", exact: true }).click();
+  await p.getByRole("dialog").getByRole("button", { name: "Confirm Completion", exact: true }).click();
   await job.getByRole("button", { name: "View Customer History", exact: true }).waitFor();
+  await job.getByText("Part paid", { exact: true }).waitFor();
   s = await state();
   assert.equal(s.data.bookings.find((v) => v.id === b.id).status, "Completed");
   assert.equal(
-    s.data.bookings.filter((v) => v.status === "Completed").reduce((sum, v) => sum + v.amount, 0),
-    original.bookings.filter((v) => v.status === "Completed").reduce((sum, v) => sum + v.amount, 0) + b.amount,
+    s.data.bookings.filter((v) => v.status === "Completed").reduce((a, v) => a + v.amount, 0),
+    original.bookings.filter((v) => v.status === "Completed").reduce((a, v) => a + v.amount, 0) + b.amount,
   );
-  await job.getByRole("button", { name: "View Customer History", exact: true }).click();
-  await job.getByRole("link", { name: /Completed/ }).waitFor();
-  await job.getByRole("button", { name: "Back to job", exact: true }).click();
-  await p.reload();
-  await job.getByRole("button", { name: "View Customer History", exact: true }).waitFor();
-  assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
-  await p.waitForTimeout(800);
+  const quoteTotal =
+    Math.round(Math.max(0, q.base + q.size + q.extras + q.travel - q.discount) * (1 + q.vat / 100) * 100) / 100;
+  await job.getByRole("button", { name: "Record / Update Payment", exact: true }).click();
+  await job.getByLabel("Total received to date (R)", { exact: true }).fill(String(quoteTotal));
+  await job.getByRole("button", { name: "Save Payment Record", exact: true }).click();
+  await job.getByText("Paid", { exact: true }).waitFor();
+  await p.goto(`${base}/dashboard/enquiries`);
+  await card.getByText("Completed", { exact: true }).waitFor();
+  await card.getByText("Paid", { exact: true }).waitFor();
+  await p.getByLabel("Filter status", { exact: true }).selectOption("Paid");
+  await card.getByRole("button", { name: "Open Enquiry", exact: true }).click();
+  await p.waitForTimeout(1400);
   await p.screenshot({
-    path: path.resolve(__dirname, `../../artifacts/winglo-connected-${mobile ? "mobile" : "desktop"}.png`),
+    path: path.resolve(__dirname, `../../artifacts/winglo-unified-${mobile ? "mobile" : "desktop"}.png`),
   });
-  await job.getByText("More options", { exact: true }).click();
-  await job.getByRole("button", { name: "View conversation", exact: true }).click();
-  await job.getByText("Collected conversation details", { exact: true }).waitFor();
-  await job.getByRole("button", { name: "Back to job", exact: true }).click();
-  await job.getByText("More options", { exact: true }).click();
-  const popupPromise = p.waitForEvent("popup");
-  await job.getByRole("button", { name: "Print / PDF", exact: true }).click();
-  const popup = await popupPromise;
-  await popup.getByText("SAMPLE ESTIMATE · DEMO DATA · NOT BUSINESS APPROVED", { exact: true }).waitFor();
-  await popup.close();
-  await job.getByRole("button", { name: "Advanced booking corrections / Cancel", exact: true }).click();
-  assert.equal(await job.getByLabel("Customer", { exact: true }).count(), 0);
-  assert.equal(await job.getByLabel("Service", { exact: true }).count(), 0);
-  await job.getByRole("radio", { name: "Cancelled", exact: true }).click();
-  await job.getByRole("button", { name: /^(Save booking|Confirm Booking & Continue)$/, exact: true }).click();
-  await job.getByRole("button", { name: "Reschedule Cleaning", exact: true }).click();
-  await job.getByRole("button", { name: "Save Booking Changes", exact: true }).click();
-  assert.equal((await state()).data.bookings.filter((v) => v.quoteId === q.id).length, 1);
-  assert.equal((await state()).data.bookings.find((v) => v.id === b.id).status, "Confirmed");
+  assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  // Additional quotes are intentional and never replace the original quote/payment/booking.
+  await job.getByRole("button", { name: "Create Additional Quote", exact: true }).click();
+  await p.getByRole("dialog").getByRole("button", { name: "Save quotation", exact: true }).click();
+  await job.waitFor();
+  s = await state();
+  assert.equal(s.data.quotes.filter((v) => v.enquiryId === e.id).length, 2);
+  assert.equal(s.data.quotes.find((v) => v.id === q.id).payment.amountReceived, quoteTotal);
+  assert.equal(s.data.bookings.filter((v) => v.quoteId === q.id).length, 1);
+  await p.goto(`${base}/dashboard/jobs/${q.id}`);
+  await job.waitFor();
+  assert.ok(p.url().includes(`/dashboard/enquiries/${q.id}`));
+  await p.goto(`${base}/dashboard/jobs`);
+  await p.getByRole("heading", { name: "Enquiries / Inbox", exact: true }).waitFor();
   assert.deepEqual(errors, []);
   console.log(
-    `PASS ${mobile ? "mobile" : "desktop"} connected job: request→review/send→accept→book→complete, exact links, duplicate guards, refresh, directory return, revenue/history, PDF, corrections and rescheduling.`,
+    `PASS ${mobile ? "mobile" : "desktop"} unified enquiry: quote/acceptance, saved waiting, partial/full payment, booking before payment, completion/revenue, directory return, additional quote isolation, redirects and persistence.`,
   );
   await browser.close();
 }

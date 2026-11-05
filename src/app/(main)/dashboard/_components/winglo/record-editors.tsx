@@ -29,12 +29,14 @@ export function QuoteEditor({
   enquiry,
   onDone,
   jobMode = false,
+  allowAdditional = false,
   lockContext = false,
 }: {
   initial?: Quote;
   enquiry?: Enquiry;
   onDone: (id: string) => void;
   jobMode?: boolean;
+  allowAdditional?: boolean;
   lockContext?: boolean;
 }) {
   const data = useDemoData();
@@ -81,7 +83,7 @@ export function QuoteEditor({
           return;
         }
         try {
-          const savedId = saveQuote(jobMode ? { ...quote, status: "Sent (Simulated)" } : quote);
+          const savedId = saveQuote(jobMode ? { ...quote, status: "Sent (Simulated)" } : quote, allowAdditional);
           toast.success("Sample quotation saved");
           onDone(savedId);
         } catch (error) {

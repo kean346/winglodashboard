@@ -7,11 +7,20 @@ export function resolveJob(data: DemoData, ref: string) {
   if (!quote && enquiry) {
     const quotes = data.quotes.filter((q) => q.enquiryId === enquiry.id);
     quote =
+      quotes.find((q) =>
+        data.bookings.some((b) => b.quoteId === q.id && !["Completed", "Cancelled"].includes(b.status)),
+      ) ??
+      quotes.find(
+        (q) => !["Rejected", "Expired"].includes(q.status) && !data.bookings.some((b) => b.quoteId === q.id),
+      ) ??
       quotes.find((q) => data.bookings.some((b) => b.quoteId === q.id)) ??
       quotes.find((q) => q.status === "Accepted (Simulated)") ??
       quotes[0];
   }
-  if (!booking && quote) booking = data.bookings.find((b) => b.quoteId === quote.id);
+  if (!booking && quote)
+    booking =
+      data.bookings.find((b) => b.quoteId === quote.id && !["Completed", "Cancelled"].includes(b.status)) ??
+      data.bookings.find((b) => b.quoteId === quote.id);
   const customer = data.customers.find(
     (c) => c.id === (enquiry?.customerId ?? quote?.customerId ?? booking?.customerId),
   );
@@ -24,7 +33,7 @@ export function resolveJob(data: DemoData, ref: string) {
   if (booking?.status === "Completed") stage = 3;
   return { enquiry, quote, booking, customer, service, stage };
 }
-export const jobUrl = (id: string) => `/dashboard/jobs/${encodeURIComponent(id)}`;
+export const jobUrl = (id: string) => `/dashboard/enquiries/${encodeURIComponent(id)}`;
 
 /** Each leaf is real work: bookings and unbooked quotes. New requests stay in the Inbox.
  * Keeping extra legacy quote/booking branches avoids hiding existing records. */
@@ -56,9 +65,55 @@ export function jobNextAction(job: ReturnType<typeof resolveJob>) {
   return "Prepare Quote";
 }
 
-/** The Inbox is an attention queue, with handled conversations available in its archive. */
-export function inboxEnquiries(data: DemoData, includeHandled = false) {
-  if (includeHandled) return data.enquiries;
-  const quoted = new Set(data.quotes.map((q) => q.enquiryId));
-  return data.enquiries.filter((e) => e.status !== "Closed" && !quoted.has(e.id));
+/** Enquiries remain visible throughout their lifecycle; only explicitly closed requests are archived. */
+export function inboxEnquiries(data: DemoData, includeClosed = true) {
+  return includeClosed ? data.enquiries : data.enquiries.filter((e) => e.status !== "Closed");
+}
+export function enquiryProgress(job: ReturnType<typeof resolveJob>) {
+  const { enquiry: e, quote: q, booking: b } = job;
+  let step = 0,
+    status = "New enquiry",
+    next = "Review request details";
+  if (e?.status === "Ready for Quote") {
+    status = "Ready for quote";
+    next = "Prepare Quote";
+  }
+  if (e?.status === "Awaiting Details") {
+    status = "Needs details";
+    next = "Complete missing details";
+  }
+  if (q) {
+    step = 1;
+    status = "Draft quote";
+    next = "Review & Send Quote";
+  }
+  if (q?.status === "Sent (Simulated)") {
+    status = "Waiting for acceptance";
+    next = "Await customer response";
+  }
+  if (q?.status === "Accepted (Simulated)") {
+    step = 2;
+    status = "Accepted";
+    next = "Schedule cleaning; record payment when received";
+  }
+  if (q && ["Rejected", "Expired"].includes(q.status)) {
+    status = q.status;
+    next = "Revise Quote";
+  }
+  if (b) {
+    step = 3;
+    status = b.status;
+    next = jobNextAction(job);
+  }
+  if (b?.status === "Confirmed") status = "Scheduled";
+  if (b?.status === "In Progress") status = "Cleaning in progress";
+  if (b?.status === "Completed") {
+    step = 4;
+    next = "View history and check payment";
+  }
+  if (e?.status === "Closed" && !b) {
+    status = "Closed";
+    next = "Reopen enquiry if needed";
+  }
+  return { step, status, next };
 }

@@ -22,6 +22,7 @@ import {
   localDate,
   type Quote,
   seed,
+  total,
 } from "./model";
 
 export type EditorRequest = {
@@ -45,7 +46,8 @@ type DemoStore = {
     enquiry: Omit<Enquiry, "id" | "customerId" | "date" | "status">,
     existing?: string,
   ) => string;
-  saveQuote: (quote: Quote) => string;
+  saveQuote: (quote: Quote, allowAdditional?: boolean) => string;
+  recordPayment: (quoteId: string, amountReceived: number, dueDate?: string) => void;
   prepareQuote: (enquiryId: string) => string;
   quoteStatus: (quoteId: string, status: Quote["status"]) => void;
   book: (booking: Booking) => string;
@@ -165,18 +167,45 @@ export const useDemo = create<DemoStore>()(
           notes: "Sample estimate only. Review the price before sending; no real message is delivered.",
         });
       },
-      saveQuote: (input) => {
+      saveQuote: (input, allowAdditional = false) => {
         const data = get().data;
         if (!data) throw new Error("Demo not loaded");
         const j = get().journey;
         const linked = data.quotes.find((q) => q.id === j?.quoteId);
-        if (linked && j?.enquiryId === input.enquiryId && linked.id !== input.id) return linked.id;
-        const quote = input;
+        if (
+          !allowAdditional &&
+          !data.quotes.some((q) => q.id === input.id) &&
+          linked &&
+          j?.enquiryId === input.enquiryId &&
+          linked.id !== input.id
+        )
+          return linked.id;
+        const previous = data.quotes.find((q) => q.id === input.id);
+        const quote =
+          input.status === "Accepted (Simulated)" && previous?.status !== input.status && !input.payment
+            ? { ...input, payment: { amountReceived: 0 } }
+            : input;
         const e = data.enquiries.find((e) => e.id === quote.enquiryId);
         if (quote.enquiryId && (!e || e.customerId !== quote.customerId || e.serviceId !== quote.serviceId))
           throw new Error("Quote and enquiry must reference the same customer and service.");
         get().update((d) => withQuoteStatus(d, quote));
         return quote.id;
+      },
+      recordPayment: (quoteId, amountReceived, dueDate) => {
+        const q = get().data?.quotes.find((q) => q.id === quoteId);
+        if (q?.status !== "Accepted (Simulated)") throw new Error("Accept the quotation before recording payment.");
+        if (!Number.isFinite(amountReceived) || amountReceived < 0 || amountReceived > total(q))
+          throw new Error("Enter the total received between zero and the quote total.");
+        if (dueDate && (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate) || Number.isNaN(Date.parse(dueDate))))
+          throw new Error("Enter a valid payment due date.");
+        get().saveQuote({
+          ...q,
+          payment: {
+            amountReceived: Math.round(amountReceived * 100) / 100,
+            dueDate: dueDate || undefined,
+            recordedAt: new Date().toISOString(),
+          },
+        });
       },
       quoteStatus: (quoteId, status) => {
         const q = get().data?.quotes.find((q) => q.id === quoteId);

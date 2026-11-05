@@ -162,6 +162,8 @@ export function recordActivity(before: DemoData, after: DemoData): Activity[] {
   for (const q of after.quotes) {
     const previous = before.quotes.find((v) => v.id === q.id);
     if (!previous) events.push({ label: "Quotation generated", customerId: q.customerId, recordId: q.id });
+    if (q.payment?.recordedAt && q.payment.recordedAt !== previous?.payment?.recordedAt)
+      events.push({ label: "Payment record updated manually (demo)", customerId: q.customerId, recordId: q.id });
     if (previous?.status !== q.status && ["Sent (Simulated)", "Accepted (Simulated)"].includes(q.status))
       events.push({ label: `Quotation ${q.status.toLowerCase()}`, customerId: q.customerId, recordId: q.id });
   }

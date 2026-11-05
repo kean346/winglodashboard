@@ -54,8 +54,8 @@ const state = (p) => p.evaluate(() => JSON.parse(localStorage.getItem("winglo-de
     initial.bookings.filter((v) => v.status === "Completed").reduce((sum, v) => sum + v.amount, 0) + booking.amount,
   );
   await p.reload();
-  await row.getByRole("button", { name: "Open Job", exact: true }).click();
-  const job = p.getByRole("main", { name: "Customer job workspace", exact: true });
+  await row.getByRole("button", { name: "Open Enquiry", exact: true }).click();
+  const job = p.getByRole("main", { name: "Enquiry workspace", exact: true });
   await job.getByRole("button", { name: "View Customer History", exact: true }).waitFor();
   assert.equal(await job.getByRole("button", { name: "Complete Job", exact: true }).count(), 0);
   await job.getByText("Cleaning started", { exact: true }).waitFor();
@@ -93,7 +93,7 @@ const state = (p) => p.evaluate(() => JSON.parse(localStorage.getItem("winglo-de
   await p.waitForTimeout(500);
   await p.screenshot({ path: path.resolve(__dirname, "../../artifacts/winglo-visual-overview.png"), fullPage: false });
   await p.goto(`${base}/dashboard/bookings`);
-  await p.locator(`[id="${booking.id}"]`).getByRole("button", { name: "Open Job", exact: true }).click();
+  await p.locator(`[id="${booking.id}"]`).getByRole("button", { name: "Open Enquiry", exact: true }).click();
   await job.getByRole("button", { name: "View Customer History", exact: true }).waitFor();
   await p.screenshot({ path: path.resolve(__dirname, "../../artifacts/winglo-visual-booking.png") });
   await p.setViewportSize({ width: 390, height: 844 });

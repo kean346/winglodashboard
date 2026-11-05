@@ -1,4 +1,4 @@
-import { JobsDirectory } from "./_components/jobs-directory";
+import { redirect } from "next/navigation";
 export default function Page() {
-  return <JobsDirectory />;
+  redirect("/dashboard/enquiries");
 }

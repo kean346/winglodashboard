@@ -3,7 +3,8 @@ import { MapPin, Phone } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-import { type Customer, type DemoData, money, serviceQuestions, total } from "./model";
+import { EnquiryProgress } from "./enquiry-progress";
+import { type Customer, type DemoData, money, paymentSummary, serviceQuestions, total } from "./model";
 import { RecordCard } from "./record-card";
 import { printQuote } from "./record-editors";
 import { Status } from "./shared";
@@ -14,7 +15,6 @@ export function DirectoryCards({
   highlightedId,
   matches,
   onJob,
-  onPrepare,
   onCustomer,
   onRepeat,
 }: {
@@ -23,7 +23,6 @@ export function DirectoryCards({
   highlightedId?: string;
   matches: (text: string, status?: string) => boolean;
   onJob: (id: string) => void;
-  onPrepare: (id: string) => void;
   onCustomer: (customer: Customer) => void;
   onRepeat: (customer: Customer) => void;
 }) {
@@ -48,22 +47,12 @@ export function DirectoryCards({
               id={`mobile-${e.id}`}
               name={customer(e.customerId)?.name ?? "Customer"}
               description={service(e.serviceId)}
-              status={<Status>{e.status}</Status>}
+              status={undefined}
               highlighted={highlightedId === e.id}
               reference={e.id}
-              actions={
-                d.quotes.some((q) => q.enquiryId === e.id) ? (
-                  <Button onClick={() => onJob(e.id)}>Open Job</Button>
-                ) : (
-                  <Button onClick={() => (e.status === "Ready for Quote" ? onPrepare(e.id) : onJob(e.id))}>
-                    {e.status === "Ready for Quote" ? "Prepare Quote" : "Review Enquiry"}
-                  </Button>
-                )
-              }
+              actions={<Button onClick={() => onJob(e.id)}>Open Enquiry</Button>}
             >
-              {d.quotes.some((q) => q.enquiryId === e.id) && (
-                <p className="text-primary text-xs">In Jobs · Conversation stays linked</p>
-              )}
+              <EnquiryProgress data={d} recordId={e.id} />
               <p className="flex items-center gap-2 text-sm">
                 <MapPin className="size-3.5 shrink-0" />
                 {customer(e.customerId)?.location}
@@ -86,6 +75,11 @@ export function DirectoryCards({
                   .join(" · ") || "Service details collected"}
               </p>
               <p className="text-muted-foreground text-xs">Preferred · {e.preferredDate}</p>
+              <p className="text-muted-foreground text-xs">
+                {d.quotes.filter((q) => q.enquiryId === e.id).length} linked quotes ·{" "}
+                {d.bookings.filter((b) => d.quotes.some((q) => q.enquiryId === e.id && q.id === b.quoteId)).length}{" "}
+                bookings
+              </p>
             </RecordCard>
           ))}
       {section === "Quotations" &&
@@ -97,12 +91,17 @@ export function DirectoryCards({
               id={`mobile-${q.id}`}
               name={customer(q.customerId)?.name ?? "Customer"}
               description={service(q.serviceId)}
-              status={<Status>{q.status}</Status>}
+              status={
+                <>
+                  <Status>{q.status}</Status>
+                  {paymentSummary(q).status !== "Not requested" && <Status>{paymentSummary(q).status}</Status>}
+                </>
+              }
               highlighted={highlightedId === q.id}
               reference={q.id}
               actions={
                 <>
-                  <Button onClick={() => onJob(q.id)}>Open Job</Button>
+                  <Button onClick={() => onJob(q.id)}>Open Enquiry</Button>
                   <Button variant="ghost" onClick={() => printQuote(q, d)}>
                     Print / PDF
                   </Button>

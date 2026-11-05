@@ -1,5 +1,4 @@
 import {
-  BriefcaseBusiness,
   CalendarDays,
   FileText,
   LayoutDashboard,
@@ -55,7 +54,6 @@ export const sidebarItems: NavGroup[] = [
     items: [
       { id: "default", title: "Overview", url: "/dashboard/default", icon: LayoutDashboard },
       { id: "demo", title: "Interactive Demo", url: "/dashboard/demo", icon: Sparkles },
-      { id: "jobs", title: "Jobs", url: "/dashboard/jobs", icon: BriefcaseBusiness },
       { id: "enquiries", title: "Enquiries / Inbox", url: "/dashboard/enquiries", icon: MessageCircle },
       { id: "quotations", title: "Quotations", url: "/dashboard/quotations", icon: FileText },
       { id: "bookings", title: "Bookings", url: "/dashboard/bookings", icon: CalendarDays },

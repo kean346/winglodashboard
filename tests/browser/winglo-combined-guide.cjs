@@ -23,11 +23,15 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
   const arrived = await p.evaluate(() => JSON.parse(localStorage.getItem("winglo-demo-v1")).state);
   await p
     .locator(`[id="mobile-${arrived.journey.enquiryId}"]`)
+    .getByRole("button", { name: "Open Enquiry", exact: true })
+    .click();
+  await p
+    .getByRole("main", { name: "Enquiry workspace", exact: true })
     .getByRole("button", { name: "Prepare Quote", exact: true })
     .click();
   await p
-    .getByRole("main", { name: "Customer job workspace", exact: true })
-    .getByRole("button", { name: "Review & Send Quote", exact: true })
+    .getByRole("main", { name: "Enquiry workspace", exact: true })
+    .getByLabel("Base cleaning price", { exact: true })
     .waitFor();
   const before = await p.evaluate(() => JSON.parse(localStorage.getItem("winglo-demo-v1")).state);
   await p.reload();
@@ -38,7 +42,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
   await tour.getByRole("button", { name: "Continue the tour", exact: true }).click();
   await tour.getByRole("heading", { name: "Enquiries / Inbox: respond to requests", exact: true }).waitFor();
   await tour.getByRole("button", { name: "Next", exact: true }).click();
-  await tour.getByRole("heading", { name: "Jobs: manage the cleaning work", exact: true }).waitFor();
+  await tour.getByRole("heading", { name: "Acceptance and payment are separate", exact: true }).waitFor();
   assert.equal(await demo.count(), 0);
   const after = await p.evaluate(() => JSON.parse(localStorage.getItem("winglo-demo-v1")).state);
   assert.equal(before.journey.step, after.journey.step);

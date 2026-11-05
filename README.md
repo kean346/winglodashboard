@@ -1,86 +1,49 @@
 # Winglo Cleaning Services — interactive demo
 
-A browser-local cleaning business demo customised from the existing Studio Admin / NOREVA dashboard. The original layout, UI primitives, calendar styling, typography, theme switcher and motion system are retained. No backend or messaging provider is connected.
+A browser-local cleaning business dashboard built on Studio Admin / NOREVA, using Next.js, React, TypeScript, Tailwind and existing shadcn components. The royal-blue theme, light/dark toggle, page animations, grey selected choices and clear count fields are retained. No authentication, database, messaging or payment provider is connected.
 
-## Inbox → Jobs handoff
+## One enquiry, everything connected
 
-**Enquiries / Inbox** is the incoming-request queue. Its default **Needs attention** view shows unquoted, open requests; **All enquiries** keeps handled and closed conversations accessible. The demo explicitly simulates WhatsApp and sends its collected request to this Inbox. It does not receive or send actual WhatsApp messages.
+**Enquiries / Inbox** is the central workspace. Each request stays visible through its quotation, customer acceptance, booking, cleaning and completion. Cards show the current progress, payment status and next action. Search, progress/payment filters, a desktop table option and an explicit closed-enquiry view remain available.
 
-Choose **Review Enquiry** to complete missing details. **Prepare Quote** saves one linked draft using the existing quotation mutation and opens the connected workspace. Repeated handoff reuses the saved draft. The request leaves the attention queue and appears in **Jobs**, where review/send, customer acceptance, scheduling and completion continue. Customer details and collected conversation answers stay linked; nothing is manually copied or deleted.
+Open an enquiry to:
 
-Jobs lists bookings and quotations without bookings. Requests without quotations remain in the Inbox. The Jobs header links back to the Inbox; redundant simulator and demo-start buttons have been removed from these screens. The optional Help walkthrough includes separate Inbox and Jobs steps and explains the live handoff. Existing saved tour positions migrate to the expanded tour; business/demo progress stays independent.
+1. Review the customer and collected conversation details.
+2. Prepare and review its quote, then simulate sending it.
+3. Simulate customer acceptance in the separate Demo controls area.
+4. Record payment when received, including partial payments and an optional due date.
+5. Schedule and confirm cleaning, start the work and confirm completion.
 
-Rollback before this change: `backup/pre-inbox-handoff-2026-11-05` at `9d47e4dd308eb8d1f5cc52a94e6008a5027707e8`.
+Quotations remains a focused management view for accepted/pending quotes and creating additional linked quotes. Bookings remains the calendar/schedule view. Customer profiles retain service history. Additional quotes and bookings are accessible from the same enquiry without replacing existing records. Legacy standalone quotes and bookings remain accessible through their directories.
 
-## Premium cards and Jobs
+The separate Jobs navigation/page has been removed. Existing `/dashboard/jobs` and `/dashboard/jobs/[id]` links redirect to the Inbox and the corresponding enquiry workspace, preserving old links. New links use `/dashboard/enquiries/[id]` and accept existing enquiry, quote and booking IDs.
 
-The dashboard now uses a royal-blue brand accent in light/dark mode. Neutral grey selections with checkmarks distinguish answers from actions; count fields provide labelled − / + controls, direct numeric entry, a zero lower bound and integer steps. Measurements retain decimal input. Existing motion stays enabled, while the new card hover transitions respect reduced-motion preferences.
+## Payment and waiting
 
-**Jobs** at `/dashboard/jobs` lists saved customer work using the existing record resolver: bookings and quotations without bookings; unquoted requests stay in the Inbox. Linked parents are not repeated as separate jobs. Multiple jobs for one customer and additional legacy quote/booking branches remain individually accessible. Search and stage/status filters open the existing connected job workspace; no second job dataset is created.
+Acceptance, payment and cleaning progress are independent. An accepted quotation may remain **Awaiting payment** until the user updates it. Partial receipts show **Part paid** and the outstanding balance; full receipts show **Paid**. No timer or navigation automatically advances these states. Scheduling is allowed while payment is pending; no pay-before-booking policy is imposed.
 
-Enquiries, Quotations and Customers default to compact cards with a desktop **Table view** option. Profile, repeat booking, PDF, search, filters and demo-record highlighting remain available. The management calendar and business mutations are unchanged.
+Payment records are cumulative manual demo entries, not transactions or verified bank transfers. Accepted legacy records without payment history show **Payment not recorded**. No historical payments or timestamps are fabricated. New simulated acceptance starts with zero received. All records persist across refresh/navigation using the existing localStorage store; the payment property is optional so existing data does not require replacement.
 
-Rollback before this update: [`backup/pre-premium-jobs-2026-11-05`](https://github.com/kean346/winglodashboard/tree/backup/pre-premium-jobs-2026-11-05), commit `dff5bc5319e104a6bd8df277066456d5125b24c5`. Code backup does not replace browser-local records.
+**Completed-job revenue is the value of completed cleaning work, not cash received.** Payment entries do not change pricing, booking value or this revenue definition. Completion never implies payment. Payment updates produce activity only when actually saved.
 
-`tests/browser/winglo-premium.cjs` covers Jobs grouping/filter/search, switching jobs for the same customer, directory cards/table access, selected choices, count controls and bounds, decimal measurements, persistence, mobile and dark mode. Review screenshots use `artifacts/winglo-premium-*`.
+Overlapping cleaner appointments are allowed throughout the demo. Duplicate quotation handoff and booking conversion remain guarded; explicitly creating an additional quote is supported. Completion still requires confirmation; routine booking actions retain safe Undo protection.
 
-## Visual workflow upgrade and rollback point
+## Demo and Help walkthrough
 
-The original pre-upgrade version is preserved at commit `538bcab191ddf22e9faa16365c4b872f441abcc0` on GitHub branch [`backup/pre-visual-upgrade-2026-11-04`](https://github.com/kean346/winglodashboard/tree/backup/pre-visual-upgrade-2026-11-04). This is a code rollback point; browser-local records are stored separately. Returning to this version does not require deleting records or changing database services.
+Overview and Interactive Demo open the same persistent simulated WhatsApp conversation. Answer the questions or use fictional sample details, then **Send Enquiry to Inbox**. Open that enquiry to continue the whole workflow. Starting another sample preserves previous enquiries and customer records. The optional Help tour explains the unified enquiry view, independent acceptance/payment, quotation management, calendar and history. Its progress is separate from business-demo data.
 
-Booking screens now show the actual Pending → Confirmed → In Progress → Completed sequence. **Confirm Booking**, **Start Cleaning**, and **Complete Job** use the existing booking mutation, including its accepted-quotation checks. Cancelled/completed records have no forward quick action. Administrative status controls remain available in the existing editor.
-
-Routine confirmation/start actions offer a short Undo window. Undo refuses to overwrite later booking changes and preserves the demo scheduling rules. Completion requires a confirmation showing the saved job value because it affects demo revenue. Status corrections and staff assignments produce activity only when the actual record changes; seeded bookings do not acquire fabricated historical timestamps.
-
-Overview retains its original KPI and chart sections while adding a compact next-actions panel and a live booking-status breakdown. Booking details combine saved customer, service, date/time, cleaner, amount, a responsive workflow stepper and recorded activity. Existing calendar views are retained with a status legend, pending-state styling and cleaner/duration tooltips. Shared primitives, fonts, themes and navigation remain unchanged.
-
-The demo now starts in light mode; choosing dark mode remains saved. Full animation is permanently enabled, including when a device or older saved preference requested reduced motion; there is no animation control. At phone widths the management tables adapt to enquiry, quotation, booking and customer cards with visible actions. Desktop tables remain available at larger widths.
-
-## Connected customer jobs
-
-The pre-change rollback point is `1eb0c73d226a2e2f409dc57714f2ffbd628a0cbb` on [`backup/pre-connected-jobs-2026-11-05`](https://github.com/kean346/winglodashboard/tree/backup/pre-connected-jobs-2026-11-05). Browser-local data is separate from this code backup.
-
-Each existing enquiry, quotation or booking opens the same linked workspace at `/dashboard/jobs/[id]`. A compact **Request → Quote → Booking → Complete** tracker derives from saved records. Customer, service and location remain visible; one primary action explains the next valid step. Editors stay inline, with secondary Edit, PDF, administrative corrections, cancellation and customer history under **More options**.
-
-The owner prepares and reviews the quote, then **Review & Send Quote** saves its simulated sent status. The separately labelled **Demo controls** area offers **Simulate Customer Acceptance**. Acceptance unlocks scheduling and **Confirm Booking**, followed by **Start Cleaning** and confirmed **Complete Job**. No real message is delivered. Existing pricing, completion confirmation, Undo and revenue rules remain in use. Overlapping cleaner assignments are allowed throughout this browser-local demo.
-
-Customer questions use the existing persistent conversation draft. Submission opens the Inbox. Prepare Quote carries the saved request into Jobs automatically, without switching roles or copying records. **View conversation** shows the saved answers for that specific request. The job view replaces the persistent floating workflow guide; optional product discovery remains under Help.
+Customer-facing `/enquire` and the administrative enquiry editor use the same service-specific questions. Customer matching, sample pricing, configurable VAT, printable quotations, settings, staff and automation previews remain local. Photos are temporary previews only. All contacts are fictional. Data is not shared between browsers/devices, and no real messages or payments are processed.
 
 ## Develop
 
-Use Node 24 (validated with 24.19.0) and npm:
+Use Node 24 and npm:
 
 ```sh
 npm ci
 npm run dev
 ```
 
-The application root redirects to `/dashboard/default`. The sidebar retains Overview, Enquiries, Quotations, Bookings, Customers and Settings, adds Jobs at `/dashboard/jobs`, and includes Interactive Demo at `/dashboard/demo`. `/enquire` is a separate customer-facing demo form.
-
-Overview offers **Try a Sample Job**, which starts or resumes the existing conversation, and **Explore Dashboard**, which opens the management sections without starting a sample. The sidebar also retains Interactive Demo. Once submitted, **Resume Customer Job** returns to the same saved records.
-
-**Start Another Sample Job** creates an isolated scenario without deleting records. Repeated submission within a scenario reuses its enquiry. **Reset Demo Data** remains a separate destructive action with confirmation.
-
-## Demo behaviour
-
-- A Zustand store persists linked customers, enquiries, quotes, bookings, settings, activity and journey state under `winglo-demo-v1` in localStorage, using schema version 1. Existing version-0 business data is migrated without replacement. A hydration gate avoids server/client mismatches. Storage failures display a warning. Settings includes a confirmed reset action.
-- Five central service-specific question sets power both the simulator and customer form. Customers are matched by normalised contact number or email where possible. Photo attachments are previews only (three images up to 5 MB each); they are never uploaded or retained.
-- Central sample pricing: base + size adjustment + extras package + travel − discount, floored at zero, then configurable VAT. VAT starts at 0%; no Winglo VAT registration or real price approval is assumed. Settings affect new estimates; saved quotes retain their reviewed values.
-- Quote status, owner approval, send and customer acceptance are simulations. Accepted quotes convert once into linked bookings. Print / PDF opens a printable quotation; choose **Save as PDF** in the browser print dialog. No PDF service or additional dependency is used.
-- Bookings support month/week calendar views, editing, rescheduling, cleaner assignment, duration, job value and status. Overlapping assignments are allowed in this demo; cleaner availability does not block bookings. Completed jobs update customer history and the revenue chart/KPI.
-- Dates are relative to initial demo creation/reset. Times use the browser's local timezone. All seed identities and contacts are fictional. Revenue means the value of completed demo jobs, not verified payments or accounting revenue.
-- All six editable automation templates support `{name}`, `{service}` and `{date}`. Previews and simulations send nothing. There are no application calls to WhatsApp, email, SMS or paid services.
-- Customer submissions from another browser/device do **not** reach an owner elsewhere. This is local storage, not shared business infrastructure.
-
-## Architecture
-
-Feature code lives in `src/app/(main)/dashboard/_components/winglo/`. `model.ts` owns domain types, seed data, question sets, pricing and overlap calculations. `store.ts` is the single persistence/mutation boundary. `journey.ts` owns conversation validation, eight stage gates, safe sample responses and activity derivation. `job-model.ts` resolves existing linked record IDs without adding a job dataset. `job-workspace.tsx` derives the next action from those saved records. The shared layout mounts only the optional product tour; editor visibility and unsaved forms remain page-local. Forms, editors, overview, booking calendar and settings compose the existing shared primitives. Route pages remain small server components.
-
-This demonstration intentionally remains browser-local. No database, authentication, credentials, messaging provider or paid integration is required. Sharing records between devices or delivering real messages is outside this demo’s scope.
-
-Overview counts **Total Enquiries** regardless of workflow status. New estimates default to Awaiting Approval; sent and accepted changes preserve a Converted enquiry. **Completed-job Revenue This Month** counts only completed bookings by appointment month. Confirmed bookings contribute no completed revenue. The separate completed-job count includes all dates. All values derive from the same records.
-
-**Demo Activity** records actual enquiry creation, quotation generation/send/acceptance, booking creation/confirmation/completion and reminder previews. Initial seed records do not create fabricated activity events.
+The root redirects to `/dashboard/default`. Feature components live in `src/app/(main)/dashboard/_components/winglo/`; the store is the single persistence/mutation boundary. Shared UI and calendar primitives are preserved. There are no new dependencies for the unified enquiry view or payment records.
 
 ## Validation
 
@@ -92,25 +55,23 @@ npm run lint
 npm run check
 ```
 
-Run Next.js once before a standalone type check on a fresh checkout so its image and route declarations are generated. Browser tests use an available Playwright installation and Chromium, without adding application dependencies:
+Run Next.js first on a fresh checkout to generate its route declarations. Browser suites use an available Playwright installation and Chromium:
 
 ```sh
-BASE_URL=http://127.0.0.1:3000 PLAYWRIGHT_MODULE=/path/to/playwright node tests/browser/winglo-workflow.cjs
-BASE_URL=http://127.0.0.1:3000 PLAYWRIGHT_MODULE=/path/to/playwright node tests/browser/winglo-actions.cjs
+PLAYWRIGHT_MODULE=/path/to/playwright node tests/browser/winglo-workflow.cjs
+PLAYWRIGHT_MODULE=/path/to/playwright node tests/browser/winglo-mobile-guided.cjs
+PLAYWRIGHT_MODULE=/path/to/playwright node tests/browser/winglo-premium.cjs
+PLAYWRIGHT_MODULE=/path/to/playwright node tests/browser/winglo-product-tour.cjs
 ```
 
-The visual workflow suite (`tests/browser/winglo-visual-workflow.cjs`, run with the same Playwright variables) covers single-action confirmation, double-click protection, Undo/stale-Undo safety, starting work, completion confirmation/cancellation, persisted status/revenue/history, overlapping demo appointments, filtering, mobile stepper width and theme screenshots. Visual review images use the `artifacts/winglo-visual-*` prefix.
+The connected desktop/mobile suites cover request → quote → acceptance, saved waiting, partial/full payment, scheduling before payment, completion/revenue, directory return, additional quote isolation, old-link redirects and persistence. Other browser suites retain settings/PDF, booking Undo/confirmation, overlapping appointments, themes and separate tour progress. Unit tests cover sample pricing, links, primary enquiry selection and independent payment calculations. Screenshots for this update use `artifacts/winglo-unified-*`.
 
-The connected workflow tests (`winglo-workflow.cjs` on desktop, `winglo-mobile-guided.cjs` on phones) cover request submission, review/send, simulated acceptance, scheduling, completion, exact linked IDs, duplicate submissions, refresh persistence, return from all three directories, customer history, revenue, PDF, corrections and rescheduling. Screenshots are `artifacts/winglo-connected-desktop.png` and `artifacts/winglo-connected-mobile.png`. The actions suite retains settings, pricing, overlapping demo booking and enquiry-status checks; the mobile suite checks routes, default light/saved dark and always-on motion. The product-tour and combined-guide suites verify independent tour navigation and business-data preservation.
+The repository-wide check has two inherited issues outside this work: map JSON formatting and regional test import order. Historical regional/motion browser scripts target older NOREVA screens.
 
-The inherited regional/motion browser scripts target the previous NOREVA screens and are historical verification artifacts, not Winglo acceptance tests. Existing repository-wide formatting issues in the world map JSON and regional data test are outside this feature.
+## Rollback
+
+Before unified enquiries: branch `backup/pre-unified-enquiries-2026-11-05` at `6210424`. Code backups are separate from browser-local records; changing code does not require deleting saved data.
 
 ## Licences
 
-The original MIT notice remains in [LICENSE](LICENSE), with a distribution copy at `public/licenses/Studio-Admin-MIT.txt`. Bundled Geist fonts retain their SIL Open Font License at `public/licenses/Geist-OFL.txt`. The existing map data and licensing notices are retained. No original Dashboard 2 repository or deployment is changed by this work.
-
-## Optional product tour
-
-**Help · Product Tour** in the sidebar and page header opens product discovery. It stores its position and visibility separately in `winglo-product-tour`; Back, Skip and Restart never reset business records or the active sample. It never starts automatically for a new visitor. The optional live step opens the same working conversation and connected job workspace, with an explicit **Continue the tour** action afterward.
-
-Only one tour panel is rendered; no floating demo guide competes with job controls. The panel stays above calendar content, wraps at phone widths, has keyboard-focusable controls and Escape dismissal, and respects reduced motion when scrolling. Missing targets show an explanation and an action to open the appropriate section.
+The original MIT notice remains in [LICENSE](LICENSE), with a distribution copy at `public/licenses/Studio-Admin-MIT.txt`. Geist fonts retain their SIL Open Font License at `public/licenses/Geist-OFL.txt`. Existing map-data notices remain. No original Dashboard 2 repository or deployment is changed.

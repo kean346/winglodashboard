@@ -68,7 +68,9 @@ export type Enquiry = {
   notes: string;
   status: (typeof enquiryStatuses)[number];
 };
+export type QuotePayment = { amountReceived: number; dueDate?: string; recordedAt?: string };
 export type Quote = {
+  payment?: QuotePayment;
   id: string;
   customerId: string;
   enquiryId?: string;
@@ -257,4 +259,19 @@ export function seed(): DemoData {
       },
     },
   };
+}
+
+/** Payment is a manual demo record, independent from acceptance and cleaning revenue. */
+export function paymentSummary(quote: Quote) {
+  const amount = total(quote);
+  const received = quote.payment?.amountReceived ?? 0;
+  const balance = Math.max(0, Math.round((amount - received) * 100) / 100);
+  let status = "Payment not recorded";
+  if (quote.status !== "Accepted (Simulated)" && !quote.payment) status = "Not requested";
+  if (quote.payment) {
+    status = "Awaiting payment";
+    if (received > 0) status = "Part paid";
+    if (balance === 0) status = amount === 0 ? "No payment due" : "Paid";
+  }
+  return { status, amount, received, balance };
 }

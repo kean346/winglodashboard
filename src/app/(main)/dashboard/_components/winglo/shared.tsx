@@ -86,7 +86,11 @@ export function Choice({
 }
 export function Status({ children }: { children: ReactNode }) {
   const completed = children === "Completed" || children === "Accepted (Simulated)";
-  const active = children === "In Progress" || children === "Confirmed";
+  const active =
+    children === "In Progress" ||
+    children === "Confirmed" ||
+    children === "Scheduled" ||
+    children === "Cleaning in progress";
   const cancelled = children === "Cancelled" || children === "Rejected" || children === "Expired";
   return (
     <Badge

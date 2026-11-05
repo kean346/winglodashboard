@@ -44,7 +44,8 @@ const assert = require("node:assert/strict");
       await p.waitForTimeout(900);
       await p.screenshot({ path: path.resolve(__dirname, "../../artifacts/winglo-inbox-walkthrough-mobile.png") });
     }
-    if (i === 3) await panel.getByRole("heading", { name: "Jobs: manage the cleaning work", exact: true }).waitFor();
+    if (i === 3)
+      await panel.getByRole("heading", { name: "Acceptance and payment are separate", exact: true }).waitFor();
   }
   await p.getByRole("heading", { name: "Bookings", exact: true }).waitFor();
   await p.waitForTimeout(700);
@@ -67,7 +68,7 @@ const assert = require("node:assert/strict");
     ),
   );
   await p.reload();
-  await p.waitForFunction(() => JSON.parse(localStorage.getItem("winglo-product-tour")).version === 2);
+  await p.waitForFunction(() => JSON.parse(localStorage.getItem("winglo-product-tour")).version === 3);
   assert.equal(
     await p.evaluate(() => JSON.parse(localStorage.getItem("winglo-product-tour")).step),
     10,

@@ -16,7 +16,8 @@ import { DemoActivity } from "./activity";
 import { BookingCalendar } from "./booking-calendar";
 import { DirectoryCards } from "./directory-cards";
 import { EnquiryForm } from "./enquiry-form";
-import { inboxEnquiries, jobUrl } from "./job-model";
+import { EnquiryProgress } from "./enquiry-progress";
+import { enquiryProgress, inboxEnquiries, jobUrl, resolveJob } from "./job-model";
 import {
   type Booking,
   bookingStatuses,
@@ -25,6 +26,7 @@ import {
   enquiryStatuses,
   localDate,
   money,
+  paymentSummary,
   type Quote,
   quoteStatuses,
   total,
@@ -47,7 +49,7 @@ type Editor =
 export function Workspace({ section = "Overview", publicForm = false }: { section?: Section; publicForm?: boolean }) {
   const { data: d, ready, update, storageError } = useDemo();
   const [editor, setEditor] = useState<Editor | null>(null);
-  const [inboxView, setInboxView] = useState("Needs attention");
+  const [inboxView, setInboxView] = useState("All enquiries");
   const [directoryView, setDirectoryView] = useState("cards");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All statuses");
@@ -115,20 +117,17 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
         </div>
       </div>
     );
-  const inboxRecords = inboxEnquiries(d, inboxView === "All enquiries");
-  function prepareEnquiry(enquiryId: string) {
-    try {
-      const quoteId = useDemo.getState().prepareQuote(enquiryId);
-      toast.success("Draft quote prepared. This request is now in Jobs.");
-      router.push(jobUrl(quoteId));
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to prepare quotation.");
-    }
-  }
+  const inboxRecords = inboxEnquiries(d, inboxView === "All enquiries").filter((e) => {
+    const resolved = resolveJob(d, e.id),
+      progress = enquiryProgress(resolved),
+      payment = resolved.quote ? paymentSummary(resolved.quote) : undefined;
+    return filter === "All statuses" || progress.status === filter || payment?.status === filter;
+  });
   const customer = (cid: string) => d.customers.find((c) => c.id === cid);
   const service = (sid: string) => d.settings.services.find((s) => s.id === sid)?.name ?? sid;
   const matches = (text: string, status?: string) =>
-    text.toLowerCase().includes(query.toLowerCase()) && (filter === "All statuses" || status === filter);
+    text.toLowerCase().includes(query.toLowerCase()) &&
+    (section === "Enquiries" || filter === "All statuses" || status === filter);
   const editEnquiry = (value?: Enquiry) => (value ? router.push(jobUrl(value.id)) : setEditor({ kind: "enquiry" }));
   const editQuote = (value?: Quote) => (value ? router.push(jobUrl(value.id)) : setEditor({ kind: "quote" }));
   const editBooking = (value?: Booking) => (value ? router.push(jobUrl(value.id)) : setEditor({ kind: "booking" }));
@@ -156,7 +155,23 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
     Customers: "Add customer via enquiry",
   };
   const statusOptions: Partial<Record<Section, readonly string[]>> = {
-    Enquiries: enquiryStatuses,
+    Enquiries: [
+      "New enquiry",
+      "Needs details",
+      "Ready for quote",
+      "Draft quote",
+      "Waiting for acceptance",
+      "Accepted",
+      "Awaiting payment",
+      "Payment not recorded",
+      "Part paid",
+      "Paid",
+      "Scheduled",
+      "Cleaning in progress",
+      "Completed",
+      "Cancelled",
+      "Closed",
+    ],
     Quotations: quoteStatuses,
     Bookings: bookingStatuses,
   };
@@ -238,8 +253,13 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
   }
   if (section === "Enquiries") {
     heading = "Enquiries / Inbox";
-    description = "Inbox is where requests arrive. Jobs is where you manage the cleaning work.";
+    description =
+      "Every enquiry, from first message to quote, payment and completed cleaning. Stay here to manage it all.";
   }
+  if (section === "Quotations")
+    description = "View accepted and pending quotes, or create an additional quote linked to an enquiry.";
+  if (section === "Bookings")
+    description = "View the cleaning schedule. Open an enquiry for its quote, payment and full progress.";
   return (
     <div className="@container/main flex flex-col gap-5">
       <header className="flex flex-wrap items-end justify-between gap-4 border-b pb-5">
@@ -318,7 +338,7 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                   <Choice
                     label="Inbox view"
                     value={inboxView}
-                    options={["Needs attention", "All enquiries"]}
+                    options={["All enquiries", "Open enquiries"]}
                     onChange={(v) => {
                       setInboxView(v);
                       setFilter("All statuses");
@@ -356,12 +376,13 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
           {section === "Enquiries" && (
             <Panel
               id="inbox-handoff"
-              title="From Inbox to Jobs"
-              description="Simulated WhatsApp enquiries · No live WhatsApp connection"
+              title="One enquiry. Everything connected."
+              description="Simulated WhatsApp enquiries · No real messages or payments"
             >
               <p className="text-muted-foreground text-sm">
-                <strong className="text-foreground">Prepare Quote</strong> creates a draft in Jobs. Customer details and
-                the conversation carry forward automatically; no copying needed.
+                Open an enquiry to prepare its quote, record acceptance and payment, and arrange the cleaning. Its
+                progress stays visible here. Acceptance, payment and cleaning are tracked separately; waiting for a
+                customer never advances the enquiry automatically.
               </p>
             </Panel>
           )}
@@ -385,7 +406,6 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
               <DirectoryCards
                 section={section as "Enquiries" | "Quotations" | "Customers"}
                 data={section === "Enquiries" ? { ...d, enquiries: inboxRecords } : d}
-                onPrepare={prepareEnquiry}
                 highlightedId={journey?.active ? highlightedId : undefined}
                 matches={matches}
                 onJob={(id) => router.push(jobUrl(id))}
@@ -430,7 +450,7 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                       <div className="flex flex-wrap gap-2">
                         <NextActionButton booking={b} />
                         <Button size="sm" variant="outline" onClick={() => editBooking(b)}>
-                          Open Job
+                          Open Enquiry
                         </Button>
                       </div>
                     </div>
@@ -482,12 +502,12 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                         </TableCell>
                         <TableCell>{e.date.slice(0, 10)}</TableCell>
                         <TableCell>
-                          <Status>{e.status}</Status>
+                          <EnquiryProgress data={d} recordId={e.id} />
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button size="sm" variant="outline" onClick={() => editEnquiry(e)}>
-                              {d.quotes.some((q) => q.enquiryId === e.id) ? "Open Job" : "Review Enquiry"}
+                              Open Enquiry
                             </Button>
                           </div>
                         </TableCell>
@@ -518,7 +538,7 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                         <TableCell>
                           <div className="flex flex-wrap gap-2">
                             <Button size="sm" variant="outline" onClick={() => editQuote(q)}>
-                              Open Job
+                              Open Enquiry
                             </Button>
                             <Button size="sm" variant="ghost" onClick={() => printQuote(q, d)}>
                               Print / PDF
@@ -554,7 +574,7 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                           <div className="flex flex-wrap items-center gap-2">
                             <NextActionButton booking={b} />
                             <Button size="sm" variant="outline" onClick={() => editBooking(b)}>
-                              Open Job
+                              Open Enquiry
                             </Button>
                           </div>
                         </TableCell>
@@ -670,6 +690,7 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
           {editor.kind === "quote" && (
             <QuoteEditor
               initial={editor.value}
+              allowAdditional={!editor.value}
               enquiry={editor.enquiry}
               onDone={(recordId) => {
                 setEditor(null);
