@@ -1,0 +1,48 @@
+const assert = require("node:assert/strict");
+const path = require("node:path");
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
+(async () => {
+  const browser = await chromium.launch({ executablePath: "/usr/bin/chromium", args: ["--no-sandbox"] });
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  p.setDefaultTimeout(15000);
+  const errors = [];
+  p.on("pageerror", (e) => errors.push(e.message));
+  await p.goto("http://127.0.0.1:3000/dashboard/default");
+  await p.getByRole("button", { name: "Take Live Tour", exact: true }).click();
+  const tour = p.getByRole("region", { name: "Product tour", exact: true });
+  await tour.getByRole("button", { name: "Next", exact: true }).click();
+  await tour.getByRole("button", { name: "Next", exact: true }).click();
+  await tour.getByRole("button", { name: "Try it now", exact: true }).click();
+  await p.getByRole("heading", { name: "Interactive Demo", exact: true }).waitFor();
+  const demo = p.getByRole("complementary", { name: "Guided demo progress" });
+  await demo.getByRole("button", { name: "Continue Product Tour", exact: true }).waitFor();
+  assert.equal(await tour.count(), 0);
+  assert.equal(await demo.count(), 1);
+  await p.getByRole("button", { name: "Use fictional example details", exact: true }).click();
+  await p.getByRole("button", { name: "Create Enquiry & Continue", exact: true }).click();
+  await p.getByRole("heading", { name: "Enquiries", exact: true }).waitFor();
+  const before = await p.evaluate(() => JSON.parse(localStorage.getItem("winglo-demo-v1")).state);
+  await p.reload();
+  await demo.getByRole("button", { name: "Continue Product Tour", exact: true }).waitFor();
+  assert.equal(await tour.count(), 0);
+  await p.waitForTimeout(600);
+  await p.screenshot({ path: path.resolve(__dirname, "../../artifacts/winglo-mobile-combined-guide.png") });
+  await demo.getByRole("button", { name: "Continue Product Tour", exact: true }).click();
+  await tour.getByRole("heading", { name: "Quotations and scheduling", exact: true }).waitFor();
+  assert.equal(await demo.count(), 0);
+  const after = await p.evaluate(() => JSON.parse(localStorage.getItem("winglo-demo-v1")).state);
+  assert.equal(before.journey.step, after.journey.step);
+  assert.equal(before.journey.enquiryId, after.journey.enquiryId);
+  assert.deepEqual(before.data, after.data);
+  await tour.getByRole("button", { name: "Skip", exact: true }).click();
+  await demo.getByRole("button", { name: "Resume Demo", exact: true }).waitFor();
+  assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  assert.deepEqual(errors, []);
+  console.log(
+    "PASS single mobile guide, live participation, refresh, return to product tour, skip, record/stage preservation and phone width",
+  );
+  await browser.close();
+})().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

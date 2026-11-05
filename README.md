@@ -91,3 +91,5 @@ The original MIT notice remains in [LICENSE](LICENSE), with a distribution copy 
 Run `tests/browser/winglo-product-tour.cjs` with the same Playwright environment variables as the other browser suites.
 
 Fresh visitors see a prominent **Start with a live tour** welcome card. The left sidebar also provides **Take Live Tour**. After the tour is opened or the visitor chooses to explore, the large welcome prompt is dismissed locally. The tour stays above calendar content, whose stacking context is isolated so scheduling elements cannot hide Step 6 controls.
+
+On phones, the product tour and interactive demo share a single visible guide. Exploring shows the product-tour panel; live participation replaces it with the existing demo guide and a **Continue Product Tour** action. Returning restores the product tour at the next discovery stage. Both sets of saved progress and all business records remain independent; desktop presentation is unchanged.

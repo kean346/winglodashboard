@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
+import { useGuidePresentation } from "./guide-presentation";
 import { draftComplete, type Journey, stageReady, stages } from "./journey";
 import { Modal } from "./shared";
 import { hydrateDemo, useDemo } from "./store";
@@ -18,6 +19,7 @@ import { hydrateDemo, useDemo } from "./store";
 export function JourneyPanel() {
   const { data, journey: j, ready } = useDemo();
   const [reminderOpen, setReminderOpen] = useState(false);
+  const presentation = useGuidePresentation();
   const pathname = usePathname();
   const router = useRouter();
   useEffect(() => {
@@ -59,9 +61,16 @@ export function JourneyPanel() {
   };
   if (j.minimized || j.paused)
     return (
-      <aside className="pointer-events-none sticky bottom-3 mx-4 mb-4" aria-label="Guided demo progress">
+      <aside
+        className={cn(
+          "pointer-events-none sticky bottom-3 mx-4 mb-4",
+          presentation.tourOpen && !presentation.participating && "hidden sm:block",
+        )}
+        aria-label="Guided demo progress"
+      >
         <Card className="pointer-events-auto ml-auto max-h-[38dvh] w-full max-w-xl overflow-y-auto sm:max-h-none">
           <CardContent className="flex flex-wrap items-center gap-3 pt-4">
+            <ProductTourReturn />
             <span className="text-muted-foreground text-xs">
               Demo {j.paused ? "paused" : "minimised"} · Stage {j.step + 1}/8
             </span>
@@ -83,10 +92,17 @@ export function JourneyPanel() {
     );
   const collecting = pathname === "/dashboard/demo" && j.step < 2 && !j.completed;
   return (
-    <aside className="pointer-events-none sticky bottom-3 mx-4 mb-4" aria-label="Guided demo progress">
+    <aside
+      className={cn(
+        "pointer-events-none sticky bottom-3 mx-4 mb-4",
+        presentation.tourOpen && !presentation.participating && "hidden sm:block",
+      )}
+      aria-label="Guided demo progress"
+    >
       {collecting && (
         <Card className="pointer-events-auto sm:hidden">
-          <CardContent className="flex items-center justify-between gap-3 py-3">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 py-3">
+            <ProductTourReturn />
             <div>
               <p className="text-primary text-xs">Stage {j.step + 1} of 8</p>
               <p className="mt-1 text-sm">
@@ -113,6 +129,7 @@ export function JourneyPanel() {
         )}
       >
         <CardContent className="flex flex-col gap-3 pt-4">
+          <ProductTourReturn />
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-primary text-xs">
@@ -245,5 +262,23 @@ export function JourneyPanel() {
         </CardContent>
       </Card>
     </aside>
+  );
+}
+
+function ProductTourReturn() {
+  const { tourOpen, participating } = useGuidePresentation();
+  if (!tourOpen || !participating) return null;
+  return (
+    <div className="flex w-full flex-wrap items-center justify-between gap-2 border-b pb-2 sm:hidden">
+      <span className="text-muted-foreground text-xs">Live tour · Interactive demo</span>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        onClick={() => window.dispatchEvent(new Event("winglo:continue-product-tour"))}
+      >
+        Continue Product Tour
+      </Button>
+    </div>
   );
 }
