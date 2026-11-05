@@ -2,11 +2,21 @@
 
 A browser-local cleaning business demo customised from the existing Studio Admin / NOREVA dashboard. The original layout, UI primitives, calendar styling, typography, theme switcher and motion system are retained. No backend or messaging provider is connected.
 
+## Inbox → Jobs handoff
+
+**Enquiries / Inbox** is the incoming-request queue. Its default **Needs attention** view shows unquoted, open requests; **All enquiries** keeps handled and closed conversations accessible. The demo explicitly simulates WhatsApp and sends its collected request to this Inbox. It does not receive or send actual WhatsApp messages.
+
+Choose **Review Enquiry** to complete missing details. **Prepare Quote** saves one linked draft using the existing quotation mutation and opens the connected workspace. Repeated handoff reuses the saved draft. The request leaves the attention queue and appears in **Jobs**, where review/send, customer acceptance, scheduling and completion continue. Customer details and collected conversation answers stay linked; nothing is manually copied or deleted.
+
+Jobs lists bookings and quotations without bookings. Requests without quotations remain in the Inbox. The Jobs header links back to the Inbox; redundant simulator and demo-start buttons have been removed from these screens. The optional Help walkthrough includes separate Inbox and Jobs steps and explains the live handoff. Existing saved tour positions migrate to the expanded tour; business/demo progress stays independent.
+
+Rollback before this change: `backup/pre-inbox-handoff-2026-11-05` at `9d47e4dd308eb8d1f5cc52a94e6008a5027707e8`.
+
 ## Premium cards and Jobs
 
 The dashboard now uses a royal-blue brand accent in light/dark mode. Neutral grey selections with checkmarks distinguish answers from actions; count fields provide labelled − / + controls, direct numeric entry, a zero lower bound and integer steps. Measurements retain decimal input. Existing motion stays enabled, while the new card hover transitions respect reduced-motion preferences.
 
-**Jobs** at `/dashboard/jobs` lists saved customer work using the existing record resolver: bookings, quotations without bookings, and requests without quotations. Linked parents are not repeated as separate jobs. Multiple jobs for one customer and additional legacy quote/booking branches remain individually accessible. Search and stage/status filters open the existing connected job workspace; no second job dataset is created.
+**Jobs** at `/dashboard/jobs` lists saved customer work using the existing record resolver: bookings and quotations without bookings; unquoted requests stay in the Inbox. Linked parents are not repeated as separate jobs. Multiple jobs for one customer and additional legacy quote/booking branches remain individually accessible. Search and stage/status filters open the existing connected job workspace; no second job dataset is created.
 
 Enquiries, Quotations and Customers default to compact cards with a desktop **Table view** option. Profile, repeat booking, PDF, search, filters and demo-record highlighting remain available. The management calendar and business mutations are unchanged.
 
@@ -34,7 +44,7 @@ Each existing enquiry, quotation or booking opens the same linked workspace at `
 
 The owner prepares and reviews the quote, then **Review & Send Quote** saves its simulated sent status. The separately labelled **Demo controls** area offers **Simulate Customer Acceptance**. Acceptance unlocks scheduling and **Confirm Booking**, followed by **Start Cleaning** and confirmed **Complete Job**. No real message is delivered. Existing pricing, conflict checks, completion confirmation, Undo and revenue rules remain in use. Scenario-linked bookings retain their cleaner-conflict exemption.
 
-Customer questions use the existing persistent conversation draft. Submission opens the saved job directly, without switching roles or navigating multiple directories. **View conversation** shows the saved answers for that specific request. The job view replaces the persistent floating workflow guide; optional product discovery remains under Help.
+Customer questions use the existing persistent conversation draft. Submission opens the Inbox. Prepare Quote carries the saved request into Jobs automatically, without switching roles or copying records. **View conversation** shows the saved answers for that specific request. The job view replaces the persistent floating workflow guide; optional product discovery remains under Help.
 
 ## Develop
 

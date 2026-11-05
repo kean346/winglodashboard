@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 import { cn } from "cn";
-import { CalendarDays, Compass, FileText, MessageCircle, Plus, Sparkles } from "lucide-react";
+import { CalendarDays, Compass, FileText, Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { DemoActivity } from "./activity";
 import { BookingCalendar } from "./booking-calendar";
 import { DirectoryCards } from "./directory-cards";
 import { EnquiryForm } from "./enquiry-form";
-import { jobUrl } from "./job-model";
+import { inboxEnquiries, jobUrl } from "./job-model";
 import {
   type Booking,
   bookingStatuses,
@@ -47,6 +47,7 @@ type Editor =
 export function Workspace({ section = "Overview", publicForm = false }: { section?: Section; publicForm?: boolean }) {
   const { data: d, ready, update, storageError } = useDemo();
   const [editor, setEditor] = useState<Editor | null>(null);
+  const [inboxView, setInboxView] = useState("Needs attention");
   const [directoryView, setDirectoryView] = useState("cards");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All statuses");
@@ -114,6 +115,16 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
         </div>
       </div>
     );
+  const inboxRecords = inboxEnquiries(d, inboxView === "All enquiries");
+  function prepareEnquiry(enquiryId: string) {
+    try {
+      const quoteId = useDemo.getState().prepareQuote(enquiryId);
+      toast.success("Draft quote prepared. This request is now in Jobs.");
+      router.push(jobUrl(quoteId));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to prepare quotation.");
+    }
+  }
   const customer = (cid: string) => d.customers.find((c) => c.id === cid);
   const service = (sid: string) => d.settings.services.find((s) => s.id === sid)?.name ?? sid;
   const matches = (text: string, status?: string) =>
@@ -157,7 +168,7 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
   };
   const visibleRecordCount = () => {
     if (section === "Enquiries")
-      return d.enquiries.filter((e) =>
+      return inboxRecords.filter((e) =>
         matches(
           `${customer(e.customerId)?.name} ${customer(e.customerId)?.phone} ${customer(e.customerId)?.location} ${service(e.serviceId)} ${e.id}`,
           e.status,
@@ -216,19 +227,26 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
         </Panel>
       </main>
     );
+  let directoryTitle = `${section} directory`;
+  if (section === "Bookings") directoryTitle = "Cleaning appointments";
+  if (section === "Enquiries") directoryTitle = "Inbox requests";
+  let heading: string = section;
+  let description = `Your cleaning business, connected. Manage ${section.toLowerCase()} in one place.`;
+  if (section === "Overview") {
+    heading = "A fresh start, every day.";
+    description = "Your enquiries, your team, and the spaces you care for.";
+  }
+  if (section === "Enquiries") {
+    heading = "Enquiries / Inbox";
+    description = "Inbox is where requests arrive. Jobs is where you manage the cleaning work.";
+  }
   return (
     <div className="@container/main flex flex-col gap-5">
       <header className="flex flex-wrap items-end justify-between gap-4 border-b pb-5">
         <div>
           <p className="text-primary text-xs tracking-widest uppercase">Winglo · Cleaning Services</p>
-          <h1 className="mt-2 text-3xl tracking-tight">
-            {section === "Overview" ? "A fresh start, every day." : section}
-          </h1>
-          <p className="text-muted-foreground mt-2 text-sm">
-            {section === "Overview"
-              ? "Your enquiries, your team, and the spaces you care for."
-              : `Your cleaning business, connected. Manage ${section.toLowerCase()} in one place.`}
-          </p>
+          <h1 className="mt-2 text-3xl tracking-tight">{heading}</h1>
+          <p className="text-muted-foreground mt-2 text-sm">{description}</p>
         </div>
         <Status>Demo Data · ZAR</Status>
       </header>
@@ -295,6 +313,19 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                   onChange={(e) => setQuery(e.target.value)}
                 />
               </div>
+              {section === "Enquiries" && (
+                <div className="w-full sm:w-44">
+                  <Choice
+                    label="Inbox view"
+                    value={inboxView}
+                    options={["Needs attention", "All enquiries"]}
+                    onChange={(v) => {
+                      setInboxView(v);
+                      setFilter("All statuses");
+                    }}
+                  />
+                </div>
+              )}
               {section !== "Customers" && (
                 <div className="w-full sm:w-44">
                   <Choice
@@ -307,17 +338,6 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
               )}
             </div>
             <div className="flex flex-wrap gap-2">
-              {section === "Enquiries" && (
-                <>
-                  <Button variant="outline" onClick={() => setEditor({ kind: "conversation" })}>
-                    <MessageCircle data-icon="inline-start" />
-                    Enquiry simulator
-                  </Button>
-                  <Button asChild variant="outline">
-                    <Link href="/enquire">Customer form</Link>
-                  </Button>
-                </>
-              )}
               {section !== "Bookings" && (
                 <Button
                   className="hidden sm:inline-flex"
@@ -333,6 +353,18 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
               </Button>
             </div>
           </div>
+          {section === "Enquiries" && (
+            <Panel
+              id="inbox-handoff"
+              title="From Inbox to Jobs"
+              description="Simulated WhatsApp enquiries · No live WhatsApp connection"
+            >
+              <p className="text-muted-foreground text-sm">
+                <strong className="text-foreground">Prepare Quote</strong> creates a draft in Jobs. Customer details and
+                the conversation carry forward automatically; no copying needed.
+              </p>
+            </Panel>
+          )}
           {section === "Bookings" && (
             <>
               <BookingCalendar onEdit={editBooking} />
@@ -352,7 +384,8 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
             <div className={cn(directoryView === "table" && "sm:hidden")}>
               <DirectoryCards
                 section={section as "Enquiries" | "Quotations" | "Customers"}
-                data={d}
+                data={section === "Enquiries" ? { ...d, enquiries: inboxRecords } : d}
+                onPrepare={prepareEnquiry}
                 highlightedId={journey?.active ? highlightedId : undefined}
                 matches={matches}
                 onJob={(id) => router.push(jobUrl(id))}
@@ -412,7 +445,7 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
           )}
           <Panel
             className={cn("hidden", (section === "Bookings" || directoryView === "table") && "sm:block")}
-            title={section === "Bookings" ? "Cleaning appointments" : `${section} directory`}
+            title={directoryTitle}
             description="Fictional records · Changes persist on this browser only"
           >
             <Table>
@@ -425,7 +458,7 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
               </TableHeader>
               <TableBody>
                 {section === "Enquiries" &&
-                  d.enquiries
+                  inboxRecords
                     .filter((e) =>
                       matches(
                         `${customer(e.customerId)?.name} ${customer(e.customerId)?.phone} ${customer(e.customerId)?.location} ${service(e.serviceId)} ${e.id}`,
@@ -454,7 +487,7 @@ export function Workspace({ section = "Overview", publicForm = false }: { sectio
                         <TableCell>
                           <div className="flex gap-2">
                             <Button size="sm" variant="outline" onClick={() => editEnquiry(e)}>
-                              Open Job
+                              {d.quotes.some((q) => q.enquiryId === e.id) ? "Open Job" : "Review Enquiry"}
                             </Button>
                           </div>
                         </TableCell>

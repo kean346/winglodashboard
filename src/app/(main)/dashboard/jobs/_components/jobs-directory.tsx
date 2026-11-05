@@ -2,9 +2,8 @@
 import { useEffect, useState } from "react";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
-import { ArrowRight, CalendarDays, MapPin, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarDays, MapPin } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,7 +21,6 @@ export function JobsDirectory() {
   const [query, setQuery] = useState("");
   const [stage, setStage] = useState("All stages");
   const [status, setStatus] = useState("All statuses");
-  const router = useRouter();
   useEffect(() => {
     void hydrateDemo();
   }, []);
@@ -52,25 +50,21 @@ export function JobsDirectory() {
           <p className="text-primary text-xs tracking-widest uppercase">Winglo workspace</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">Jobs</h1>
           <p className="text-muted-foreground mt-2 text-sm">
-            Every customer job, from first request to finished clean.
+            Quotations, scheduled cleaning and completed work. New requests stay in your Inbox.
           </p>
         </div>
-        <Button
-          className="min-h-11"
-          onClick={() => {
-            useDemo.getState().startJourney();
-            router.push("/dashboard/demo");
-          }}
-        >
-          <Sparkles data-icon="inline-start" />
-          Try a Sample Job
+        <Button className="min-h-11" variant="outline" asChild>
+          <Link href="/dashboard/enquiries">
+            Open Inbox
+            <ArrowRight data-icon="inline-end" />
+          </Link>
         </Button>
       </header>
-      <div className="grid grid-cols-4 gap-2 sm:gap-3">
-        {stages.map((label, i) => (
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        {stages.slice(1).map((label, i) => (
           <div key={label} className="bg-card rounded-xl border p-3 sm:p-4">
             <p className="text-muted-foreground text-xs">{label}</p>
-            <p className="mt-2 text-2xl font-semibold tracking-tight">{jobs.filter((j) => j.stage === i).length}</p>
+            <p className="mt-2 text-2xl font-semibold tracking-tight">{jobs.filter((j) => j.stage === i + 1).length}</p>
           </div>
         ))}
       </div>
@@ -84,7 +78,7 @@ export function JobsDirectory() {
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
-        <Choice label="Job stage" value={stage} onChange={setStage} options={["All stages", ...stages]} />
+        <Choice label="Job stage" value={stage} onChange={setStage} options={["All stages", ...stages.slice(1)]} />
         <Choice
           label="Job status"
           value={status}

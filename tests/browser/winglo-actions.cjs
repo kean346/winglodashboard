@@ -43,13 +43,14 @@ const base = process.env.BASE_URL || "http://127.0.0.1:3000";
   await dialog.getByRole("button", { name: /^(Save booking|Confirm Booking & Continue)$/, exact: true }).click();
   await dialog.waitFor({ state: "hidden" });
   await p.goto(`${base}/dashboard/enquiries`);
-  await p.getByRole("button", { name: "Open Job", exact: true }).first().click();
+  await p.getByRole("button", { name: "Review Enquiry", exact: true }).first().click();
   await p.getByText("More options", { exact: true }).click();
   await p.getByRole("button", { name: "Advanced request corrections", exact: true }).click();
   await p.getByLabel("Enquiry status", { exact: true }).selectOption("Closed");
   await p.goto(`${base}/dashboard/enquiries`);
+  await p.getByLabel("Inbox view", { exact: true }).selectOption("All enquiries");
   await p.getByLabel("Filter status", { exact: true }).selectOption("Closed");
-  assert.equal(await p.getByRole("button", { name: "Open Job", exact: true }).count(), 1);
+  assert.equal(await p.getByRole("button", { name: "Review Enquiry", exact: true }).count(), 1);
   assert.deepEqual(errors, []);
   console.log(
     "PASS: persisted pricing/VAT/staff settings; estimate prefill; printable/PDF document; week view; cleaner conflict rejection and resolution; enquiry status/filter.",

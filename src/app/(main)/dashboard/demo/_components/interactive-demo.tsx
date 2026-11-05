@@ -73,8 +73,8 @@ export function InteractiveDemo() {
   }
   function submit() {
     try {
-      const id = store.createJourneyEnquiry();
-      router.push(jobUrl(id));
+      store.createJourneyEnquiry();
+      router.push("/dashboard/enquiries");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Complete all required details.");
     }
@@ -85,13 +85,25 @@ export function InteractiveDemo() {
         <p className="text-primary text-xs tracking-widest uppercase">Winglo · Sample customer request</p>
         <h1 className="mt-2 text-3xl tracking-tight">Tell us about your clean.</h1>
         <p className="text-muted-foreground mt-2 text-sm">
-          Answer as the customer. When you submit, the same job opens for Winglo to prepare a quotation.
+          Answer as the customer. When you submit, it arrives in Enquiries / Inbox. Review it there, then prepare a
+          quote to move it into Jobs.
         </p>
       </header>
-      <p className="text-muted-foreground text-xs">Demo conversation · No real messages sent</p>
+      <p className="text-muted-foreground text-xs">Simulated WhatsApp enquiry · No real messages sent</p>
       {enquiry && (
-        <Panel title="This request is already saved" description={`${enquiry.id} · Continue where you left off.`}>
-          <Button onClick={() => router.push(jobUrl(enquiry.id))}>Resume Customer Job</Button>
+        <Panel
+          title="This request is already saved"
+          description={`${enquiry.id} · ${data.quotes.some((q) => q.enquiryId === enquiry.id) ? "Quote prepared. Continue in Jobs." : "Waiting in Enquiries / Inbox. Prepare its quote to start the job."}`}
+        >
+          <Button
+            onClick={() =>
+              router.push(
+                data.quotes.some((q) => q.enquiryId === enquiry.id) ? jobUrl(enquiry.id) : "/dashboard/enquiries",
+              )
+            }
+          >
+            {data.quotes.some((q) => q.enquiryId === enquiry.id) ? "Resume Customer Job" : "Open Inbox"}
+          </Button>
         </Panel>
       )}
       <Panel
@@ -213,10 +225,11 @@ export function InteractiveDemo() {
               {complete && (
                 <div className="flex flex-col gap-3 border-t pt-4">
                   <p className="text-primary text-sm">
-                    Customer details complete. Next, Winglo prepares the quotation.
+                    Customer details complete. Send this simulated enquiry to the Inbox, then choose Prepare Quote to
+                    move it into Jobs.
                   </p>
                   <Button className="min-h-12" onClick={submit}>
-                    Submit Request & Open Job
+                    Send Enquiry to Inbox
                   </Button>
                 </div>
               )}

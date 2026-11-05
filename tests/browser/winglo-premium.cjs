@@ -14,9 +14,7 @@ const base = process.env.BASE_URL || "http://127.0.0.1:3000";
   await main.getByRole("heading", { name: "Jobs", exact: true }).waitFor();
   const original = (await state()).data;
   const expected =
-    original.bookings.length +
-    original.quotes.filter((q) => !original.bookings.some((b) => b.quoteId === q.id)).length +
-    original.enquiries.filter((e) => !original.quotes.some((q) => q.enquiryId === e.id)).length;
+    original.bookings.length + original.quotes.filter((q) => !original.bookings.some((b) => b.quoteId === q.id)).length;
   assert.equal(await p.locator(".winglo-record-card").count(), expected);
   assert.ok(expected > 1);
   await p.waitForTimeout(1800);

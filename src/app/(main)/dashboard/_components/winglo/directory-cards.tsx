@@ -14,6 +14,7 @@ export function DirectoryCards({
   highlightedId,
   matches,
   onJob,
+  onPrepare,
   onCustomer,
   onRepeat,
 }: {
@@ -22,6 +23,7 @@ export function DirectoryCards({
   highlightedId?: string;
   matches: (text: string, status?: string) => boolean;
   onJob: (id: string) => void;
+  onPrepare: (id: string) => void;
   onCustomer: (customer: Customer) => void;
   onRepeat: (customer: Customer) => void;
 }) {
@@ -49,8 +51,19 @@ export function DirectoryCards({
               status={<Status>{e.status}</Status>}
               highlighted={highlightedId === e.id}
               reference={e.id}
-              actions={<Button onClick={() => onJob(e.id)}>Open Job</Button>}
+              actions={
+                d.quotes.some((q) => q.enquiryId === e.id) ? (
+                  <Button onClick={() => onJob(e.id)}>Open Job</Button>
+                ) : (
+                  <Button onClick={() => (e.status === "Ready for Quote" ? onPrepare(e.id) : onJob(e.id))}>
+                    {e.status === "Ready for Quote" ? "Prepare Quote" : "Review Enquiry"}
+                  </Button>
+                )
+              }
             >
+              {d.quotes.some((q) => q.enquiryId === e.id) && (
+                <p className="text-primary text-xs">In Jobs · Conversation stays linked</p>
+              )}
               <p className="flex items-center gap-2 text-sm">
                 <MapPin className="size-3.5 shrink-0" />
                 {customer(e.customerId)?.location}

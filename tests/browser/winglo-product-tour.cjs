@@ -18,8 +18,8 @@ const assert = require("node:assert/strict");
   await panel.getByRole("button", { name: "Try it now", exact: true }).click();
   await p.getByRole("heading", { name: "Tell us about your clean.", exact: true }).waitFor();
   await p.getByRole("button", { name: "Use Sample Details", exact: true }).click();
-  await p.getByRole("button", { name: "Submit Request & Open Job", exact: true }).click();
-  await p.getByRole("main", { name: "Customer job workspace", exact: true }).waitFor();
+  await p.getByRole("button", { name: "Send Enquiry to Inbox", exact: true }).click();
+  await p.getByRole("heading", { name: "Enquiries / Inbox", exact: true }).waitFor();
   const before = await p.evaluate(() => JSON.parse(localStorage.getItem("winglo-demo-v1")).state);
   await panel.getByRole("button", { name: "Continue the tour", exact: true }).click();
   await panel.getByRole("button", { name: "Skip", exact: true }).click();
@@ -36,8 +36,16 @@ const assert = require("node:assert/strict");
   assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   await p.waitForTimeout(800);
   await p.screenshot({ path: path.resolve(__dirname, "../../artifacts/winglo-product-tour-mobile.png") });
-  for (let i = 0; i < 4; i++)
+  for (let i = 0; i < 6; i++) {
     await panel.getByRole("button", { name: /^(Next|Continue the tour)$/, exact: true }).click();
+    if (i === 2) {
+      await panel.getByRole("heading", { name: "Enquiries / Inbox: respond to requests", exact: true }).waitFor();
+      await p.locator("#inbox-handoff[data-product-spotlight]").waitFor();
+      await p.waitForTimeout(900);
+      await p.screenshot({ path: path.resolve(__dirname, "../../artifacts/winglo-inbox-walkthrough-mobile.png") });
+    }
+    if (i === 3) await panel.getByRole("heading", { name: "Jobs: manage the cleaning work", exact: true }).waitFor();
+  }
   await p.getByRole("heading", { name: "Bookings", exact: true }).waitFor();
   await p.waitForTimeout(700);
   await p.evaluate(() => window.scrollBy(0, 200));
@@ -52,6 +60,20 @@ const assert = require("node:assert/strict");
   );
   await nextButton.click();
   await p.getByRole("heading", { name: "Customers", exact: true }).waitFor();
+  await p.evaluate(() =>
+    localStorage.setItem(
+      "winglo-product-tour",
+      JSON.stringify({ step: 8, open: false, participating: false, seen: true }),
+    ),
+  );
+  await p.reload();
+  await p.waitForFunction(() => JSON.parse(localStorage.getItem("winglo-product-tour")).version === 2);
+  assert.equal(
+    await p.evaluate(() => JSON.parse(localStorage.getItem("winglo-product-tour")).step),
+    10,
+    "Existing tour completion migrates past the two new steps",
+  );
+  assert.deepEqual((await p.evaluate(() => JSON.parse(localStorage.getItem("winglo-demo-v1")).state)).data, after.data);
   console.log(
     "PASS tour navigation, highlight, back/restart, live transition, skip/refresh, demo/data preservation and phone width",
   );

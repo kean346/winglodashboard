@@ -26,15 +26,13 @@ export function resolveJob(data: DemoData, ref: string) {
 }
 export const jobUrl = (id: string) => `/dashboard/jobs/${encodeURIComponent(id)}`;
 
-/** Each leaf is real work: bookings, unbooked quotes, then unquoted requests.
+/** Each leaf is real work: bookings and unbooked quotes. New requests stay in the Inbox.
  * Keeping extra legacy quote/booking branches avoids hiding existing records. */
 export function listJobs(data: DemoData) {
   const bookedQuotes = new Set(data.bookings.map((b) => b.quoteId).filter(Boolean));
-  const quotedRequests = new Set(data.quotes.map((q) => q.enquiryId).filter(Boolean));
   const refs = [
     ...data.bookings.map((b) => b.id),
     ...data.quotes.filter((q) => !bookedQuotes.has(q.id)).map((q) => q.id),
-    ...data.enquiries.filter((e) => !quotedRequests.has(e.id)).map((e) => e.id),
   ];
   return refs.map((ref) => ({ ref, ...resolveJob(data, ref) }));
 }
@@ -56,4 +54,11 @@ export function jobNextAction(job: ReturnType<typeof resolveJob>) {
   if (e?.status === "Closed") return "Reopen Request";
   if (e && ["New", "Awaiting Details"].includes(e.status)) return "Review Request";
   return "Prepare Quote";
+}
+
+/** The Inbox is an attention queue, with handled conversations available in its archive. */
+export function inboxEnquiries(data: DemoData, includeHandled = false) {
+  if (includeHandled) return data.enquiries;
+  const quoted = new Set(data.quotes.map((q) => q.enquiryId));
+  return data.enquiries.filter((e) => e.status !== "Closed" && !quoted.has(e.id));
 }

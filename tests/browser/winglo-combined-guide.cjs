@@ -18,8 +18,17 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
   assert.equal(await demo.count(), 0);
   assert.equal(await tour.count(), 1);
   await p.getByRole("button", { name: "Use Sample Details", exact: true }).click();
-  await p.getByRole("button", { name: "Submit Request & Open Job", exact: true }).click();
-  await p.getByRole("main", { name: "Customer job workspace", exact: true }).waitFor();
+  await p.getByRole("button", { name: "Send Enquiry to Inbox", exact: true }).click();
+  await p.getByRole("heading", { name: "Enquiries / Inbox", exact: true }).waitFor();
+  const arrived = await p.evaluate(() => JSON.parse(localStorage.getItem("winglo-demo-v1")).state);
+  await p
+    .locator(`[id="mobile-${arrived.journey.enquiryId}"]`)
+    .getByRole("button", { name: "Prepare Quote", exact: true })
+    .click();
+  await p
+    .getByRole("main", { name: "Customer job workspace", exact: true })
+    .getByRole("button", { name: "Review & Send Quote", exact: true })
+    .waitFor();
   const before = await p.evaluate(() => JSON.parse(localStorage.getItem("winglo-demo-v1")).state);
   await p.reload();
   await tour.waitFor();
@@ -27,7 +36,9 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
   await p.waitForTimeout(600);
   await p.screenshot({ path: path.resolve(__dirname, "../../artifacts/winglo-mobile-combined-guide.png") });
   await tour.getByRole("button", { name: "Continue the tour", exact: true }).click();
-  await tour.getByRole("heading", { name: "Quotations and scheduling", exact: true }).waitFor();
+  await tour.getByRole("heading", { name: "Enquiries / Inbox: respond to requests", exact: true }).waitFor();
+  await tour.getByRole("button", { name: "Next", exact: true }).click();
+  await tour.getByRole("heading", { name: "Jobs: manage the cleaning work", exact: true }).waitFor();
   assert.equal(await demo.count(), 0);
   const after = await p.evaluate(() => JSON.parse(localStorage.getItem("winglo-demo-v1")).state);
   assert.equal(before.journey.step, after.journey.step);

@@ -50,8 +50,11 @@ export function JobWorkspace({ recordId }: { recordId: string }) {
     );
   const sent = q?.status === "Sent (Simulated)";
   const accepted = q?.status === "Accepted (Simulated)";
-  let instruction = "Review this request, then prepare a sample quotation.";
-  if (q) instruction = "Review the price, then send the quotation to the customer.";
+  let instruction =
+    "This request is in your Inbox. Review the details, then choose Prepare Quote to move it into Jobs.";
+  if (q)
+    instruction =
+      "This request is now in Jobs. Review the draft price, then send the quotation. Its customer and conversation stay linked.";
   if (sent)
     instruction = "Waiting for the customer to accept your quotation. In this demo, simulate their response below.";
   if (accepted && !b) instruction = "The customer accepted. Choose a date, time and cleaner to schedule the job.";
@@ -73,13 +76,19 @@ export function JobWorkspace({ recordId }: { recordId: string }) {
   };
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-5 pb-8" aria-label="Customer job workspace">
-      <Button variant="ghost" className="self-start" onClick={() => router.push("/dashboard/jobs")}>
+      <Button
+        variant="ghost"
+        className="self-start"
+        onClick={() => router.push(q || b ? "/dashboard/jobs" : "/dashboard/enquiries")}
+      >
         <ChevronLeft data-icon="inline-start" />
-        All jobs
+        {q || b ? "All jobs" : "Back to Inbox"}
       </Button>
       <header className="flex flex-wrap items-start justify-between gap-4 border-b pb-5">
         <div>
-          <p className="text-primary text-xs tracking-widest uppercase">Winglo · Customer job</p>
+          <p className="text-primary text-xs tracking-widest uppercase">
+            {q || b ? "Winglo · Customer job" : "Inbox · Enquiry details"}
+          </p>
           <h1 className="mt-2 text-3xl tracking-tight">{c.name}</h1>
           <p className="mt-2 text-sm">{service?.name}</p>
           <p className="text-muted-foreground mt-1 flex items-center gap-2 text-sm">
@@ -117,7 +126,17 @@ export function JobWorkspace({ recordId }: { recordId: string }) {
             aria-label="Next job action"
           >
             {!q && e && !["New", "Awaiting Details", "Closed"].includes(e.status) && (
-              <Button className="min-h-12 w-full sm:w-auto sm:self-start" onClick={() => setMode("quote")}>
+              <Button
+                className="min-h-12 w-full sm:w-auto sm:self-start"
+                onClick={() => {
+                  try {
+                    useDemo.getState().prepareQuote(e.id);
+                    setMode("quote");
+                  } catch (error) {
+                    toast.error(error instanceof Error ? error.message : "Unable to prepare quote.");
+                  }
+                }}
+              >
                 Prepare Quote
               </Button>
             )}

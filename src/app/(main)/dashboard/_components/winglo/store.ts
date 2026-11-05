@@ -17,8 +17,10 @@ import {
   type Customer,
   type DemoData,
   type Enquiry,
+  estimate,
   id,
   isInteractiveBooking,
+  localDate,
   overlaps,
   type Quote,
   seed,
@@ -46,6 +48,7 @@ type DemoStore = {
     existing?: string,
   ) => string;
   saveQuote: (quote: Quote) => string;
+  prepareQuote: (enquiryId: string) => string;
   quoteStatus: (quoteId: string, status: Quote["status"]) => void;
   book: (booking: Booking) => string;
   startJourney: (restart?: boolean) => void;
@@ -144,6 +147,25 @@ export const useDemo = create<DemoStore>()(
           enquiries: existing ? d.enquiries.map((e) => (e.id === existing ? enquiry : e)) : [enquiry, ...d.enquiries],
         }));
         return enquiryId;
+      },
+      prepareQuote: (enquiryId) => {
+        const data = get().data;
+        if (!data) throw new Error("Demo not loaded");
+        const existing = data.quotes.find((q) => q.enquiryId === enquiryId);
+        if (existing) return existing.id;
+        const enquiry = data.enquiries.find((e) => e.id === enquiryId);
+        if (!enquiry || ["New", "Awaiting Details", "Closed"].includes(enquiry.status))
+          throw new Error("Review and complete this enquiry before preparing a quote.");
+        return get().saveQuote({
+          id: id("Q"),
+          enquiryId,
+          customerId: enquiry.customerId,
+          serviceId: enquiry.serviceId,
+          ...estimate(enquiry, data.settings),
+          date: localDate(),
+          status: "Draft",
+          notes: "Sample estimate only. Review the price before sending; no real message is delivered.",
+        });
       },
       saveQuote: (input) => {
         const data = get().data;

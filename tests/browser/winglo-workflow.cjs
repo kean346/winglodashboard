@@ -18,16 +18,40 @@ async function runConnectedJob({ mobile = false } = {}) {
   const original = (await state()).data;
   await p.getByRole("button", { name: "Use Sample Details", exact: true }).click();
   await p.reload();
-  await p.getByRole("button", { name: "Submit Request & Open Job", exact: true }).click();
+  await p.getByRole("button", { name: "Send Enquiry to Inbox", exact: true }).click();
   const job = p.getByRole("main", { name: "Customer job workspace", exact: true });
-  await job.getByRole("button", { name: "Prepare Quote", exact: true }).waitFor();
+  await p.getByRole("heading", { name: "Enquiries / Inbox", exact: true }).waitFor();
   let s = await state();
   const e = s.data.enquiries.find((e) => e.id === s.journey.enquiryId);
   assert.ok(e);
   assert.equal(s.data.enquiries.length, original.enquiries.length + 1);
   assert.equal(await p.getByRole("tab", { name: /Business View/ }).count(), 0);
   assert.equal(await p.getByRole("complementary", { name: "Guided demo progress" }).count(), 0);
-  await job.getByRole("button", { name: "Prepare Quote", exact: true }).click();
+  assert.equal(s.data.quotes.length, original.quotes.length, "Inbox arrival does not create a job quote");
+  await p.goto(`${base}/dashboard/jobs`);
+  await p.getByRole("heading", { name: "Jobs", exact: true }).waitFor();
+  assert.equal(await p.locator(`[id="job-${e.id}"]`).count(), 0, "Unquoted enquiry stays out of Jobs");
+  await p.goto(`${base}/dashboard/enquiries`);
+  await p
+    .locator(`[id="mobile-${e.id}"]`)
+    .getByRole("button", { name: "Prepare Quote", exact: true })
+    .evaluate((button) => {
+      button.click();
+      button.click();
+    });
+  await job.getByRole("button", { name: "Review & Send Quote", exact: true }).waitFor();
+  s = await state();
+  assert.equal(s.data.quotes.filter((q) => q.enquiryId === e.id).length, 1, "Repeated handoff reuses one draft");
+  assert.equal(s.data.quotes.find((q) => q.enquiryId === e.id).status, "Draft");
+  await p.goto(`${base}/dashboard/enquiries`);
+  assert.equal(await p.locator(`[id="mobile-${e.id}"]`).count(), 0, "Handled enquiry leaves the attention queue");
+  await p.getByLabel("Inbox view", { exact: true }).selectOption("All enquiries");
+  await p.waitForTimeout(900);
+  await p.screenshot({
+    path: path.resolve(__dirname, `../../artifacts/winglo-inbox-${mobile ? "mobile" : "desktop"}.png`),
+  });
+  await p.locator(`[id="mobile-${e.id}"]`).getByRole("button", { name: "Open Job", exact: true }).click();
+  await job.getByRole("button", { name: "Review & Send Quote", exact: true }).click();
   await job.getByLabel("Base cleaning price", { exact: true }).fill("1000");
   assert.equal(await job.getByLabel("Quote status", { exact: true }).count(), 0);
   await job.getByRole("button", { name: "Review & Send Quote", exact: true }).evaluate((el) => {
@@ -66,6 +90,7 @@ async function runConnectedJob({ mobile = false } = {}) {
     ["bookings", b.id, "Mobile cleaning appointments"],
   ]) {
     await p.goto(`${base}/dashboard/${route}`);
+    if (route === "enquiries") await p.getByLabel("Inbox view", { exact: true }).selectOption("All enquiries");
     await p.getByLabel(`Search ${route}`, { exact: true }).fill(expectedCustomer);
     if (mobile)
       await p

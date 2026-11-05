@@ -16,7 +16,7 @@ const steps = [
     title: "Your business at a glance",
     route: "default",
     target: "#winglo-overview > div > div:first-child",
-    text: "Enquiries become quotations and bookings. Revenue counts completed cleaning jobs only.",
+    text: "New enquiries arrive in the Inbox. Prepare a quote to start a job, then schedule and complete the cleaning. Revenue counts completed jobs only.",
   },
   {
     title: "Daily operations",
@@ -34,7 +34,19 @@ const steps = [
     title: "Live interaction",
     route: "demo",
     target: "#demo-answer",
-    text: "Answer the customer questions, then submit the request to open its connected job workspace. Continue the tour whenever you’re ready.",
+    text: "Simulate a WhatsApp enquiry using the customer questions. Send it to the Inbox, then choose Prepare Quote to carry it into Jobs. No real WhatsApp messages are received or sent.",
+  },
+  {
+    title: "Enquiries / Inbox: respond to requests",
+    route: "enquiries",
+    target: "#inbox-handoff",
+    text: "Review incoming requests and collect missing details. Prepare Quote creates a linked draft in Jobs automatically. All enquiries keeps handled conversations available.",
+  },
+  {
+    title: "Jobs: manage the cleaning work",
+    route: "jobs",
+    target: '[aria-label="Customer jobs"] .winglo-record-card',
+    text: "Manage quotes, customer acceptance, bookings and completion here. Open any job to continue. One customer can have several jobs; unquoted requests stay in the Inbox.",
   },
   {
     title: "Quotations and scheduling",
@@ -67,8 +79,8 @@ const steps = [
     text: "Keep exploring, restart this tour or resume your interactive demo. Your business records are preserved.",
   },
 ];
-type Tour = { step: number; open: boolean; participating: boolean; seen?: boolean };
-const initial: Tour = { step: 0, open: false, participating: false };
+type Tour = { version?: number; step: number; open: boolean; participating: boolean; seen?: boolean };
+const initial: Tour = { version: 2, step: 0, open: false, participating: false };
 export function ProductTour() {
   const [tour, setTour] = useState<Tour>(initial);
   const [loaded, setLoaded] = useState(false);
@@ -77,11 +89,17 @@ export function ProductTour() {
   const pathname = usePathname();
   const active = useDemo((s) => s.journey?.active);
   const enquiry = useDemo((s) => s.data?.enquiries.find((e) => e.id === s.journey?.enquiryId));
+  const quote = useDemo((s) => s.data?.quotes.find((q) => q.id === s.journey?.quoteId));
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("winglo-product-tour") || "null");
       if (saved && Number.isInteger(saved.step) && saved.step >= 0 && saved.step < steps.length)
-        setTour({ ...initial, ...saved });
+        setTour({
+          ...initial,
+          ...saved,
+          version: 2,
+          step: saved.version === 2 ? saved.step : ([0, 1, 2, 3, 6, 7, 8, 9, 10][saved.step] ?? 0),
+        });
     } catch {
       /* A missing or unreadable tour preference leaves the tour optional. */
     }
@@ -130,7 +148,7 @@ export function ProductTour() {
   }, [tour.open, tour.participating, pathname, step]);
   function go(index: number) {
     if (useDemo.getState().journey?.active) useDemo.getState().patchJourney({ minimized: true });
-    setTour({ step: index, open: true, participating: false, seen: true });
+    setTour({ version: 2, step: index, open: true, participating: false, seen: true });
     router.push(`/dashboard/${steps[index].route}`);
   }
   useEffect(() => {
@@ -169,13 +187,14 @@ export function ProductTour() {
               <h2 className="font-medium">{step.title}</h2>
               <p className="text-muted-foreground text-sm">
                 {tour.participating
-                  ? "You’re using the live job workflow. Submit a request, then follow its next action. Your records stay saved when you continue the tour."
+                  ? "Simulate a WhatsApp request → Send Enquiry to Inbox → Prepare Quote → continue in Jobs. No real messages are sent. Your records stay saved when you continue the tour."
                   : step.text}
               </p>
               {tour.participating && enquiry && (
                 <p role="status" className="text-primary text-sm">
-                  Live enquiry {enquiry.id} is saved in your dashboard. Its quotation and booking will use this same
-                  record.
+                  {quote
+                    ? `Quote ${quote.id} is prepared. This request is now in Jobs, with its customer and conversation linked.`
+                    : `Enquiry ${enquiry.id} is in your Inbox. Choose Prepare Quote to carry it into Jobs.`}
                 </p>
               )}
               <Progress value={((tour.step + 1) / steps.length) * 100} />

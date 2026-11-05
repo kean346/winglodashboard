@@ -97,8 +97,8 @@ test("Jobs lists each linked branch once and preserves multiple jobs for one cus
     bookings: [b, { ...b, id: "second-booking" }, { ...b, id: "legacy-booking", quoteId: undefined }],
   };
   const jobs = listJobs(data);
-  assert.equal(jobs.length, 5);
-  assert.equal(new Set(jobs.map((j) => j.ref)).size, 5);
+  assert.equal(jobs.length, 4);
+  assert.equal(new Set(jobs.map((j) => j.ref)).size, 4);
   assert.ok(jobs.every((j) => j.customer.id === customer.id));
   assert.equal(
     jobs.filter((j) => j.quote?.id === q.id).length,
@@ -109,4 +109,25 @@ test("Jobs lists each linked branch once and preserves multiple jobs for one cus
   assert.equal(jobNextAction(jobs.find((j) => j.ref === b.id)), "Start Cleaning");
   assert.equal(jobNextAction(jobs.find((j) => j.ref === "second-quote")), "Waiting for Customer");
   assert.equal(jobs.find((j) => j.ref === "legacy-booking").enquiry, undefined);
+});
+
+test("Inbox attention queue excludes quoted and closed requests without deleting conversations", async () => {
+  const { inboxEnquiries, listJobs } = await import("../src/app/(main)/dashboard/_components/winglo/job-model.ts");
+  const data = seed();
+  const request = { ...data.enquiries[0], id: "new-request", status: "Ready for Quote" };
+  data.enquiries.push(request, { ...request, id: "closed-request", status: "Closed" });
+  assert.ok(inboxEnquiries(data).some((e) => e.id === request.id));
+  assert.ok(!listJobs(data).some((j) => j.ref === request.id));
+  data.quotes.push({
+    ...data.quotes[0],
+    id: "prepared-draft",
+    enquiryId: request.id,
+    customerId: request.customerId,
+    serviceId: request.serviceId,
+    status: "Draft",
+  });
+  assert.ok(!inboxEnquiries(data).some((e) => e.id === request.id));
+  assert.ok(listJobs(data).some((j) => j.ref === "prepared-draft"));
+  assert.ok(!inboxEnquiries(data).some((e) => e.id === "closed-request"));
+  assert.equal(inboxEnquiries(data, true).length, data.enquiries.length);
 });
